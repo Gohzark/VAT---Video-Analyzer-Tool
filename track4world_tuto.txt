@@ -1,0 +1,71 @@
+#1. Cloner le repo
+git clone --recursive https://github.com/TencentARC/Track4World.git
+cd Track4World
+
+#2. Setup le env
+# Create and activate environment
+conda create -n track4world python=3.11
+conda activate track4world
+
+# Install PyTorch
+# A REMPLACER : pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 --index-url https://download.pytorch.org/whl/cu121
+pip install torch==2.7.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+
+
+# Install dependencies
+pip install -r requirements.txt
+
+#Install ninja
+pip install ninja
+
+#3. Nettoyer le cache (optionnel)
+	conda clean --all -y
+	pip cache purge 
+
+
+#5. Installer les modules tiers
+# Install utils3d
+git clone https://github.com/jiah-cloud/utils3d.git 
+
+# Setup Pi3 (Sparse checkout)
+git clone --no-checkout https://github.com/yyfz/Pi3.git track4world/nets/external/pi3_repo
+cd track4world/nets/external/pi3_repo
+git sparse-checkout init
+git sparse-checkout set pi3
+git checkout main
+find . -maxdepth 1 -type f -exec rm -f {} \;
+mv pi3 ../pi3
+cd ../../../..
+
+# Setup Grounded-SAM-2	
+git clone https://github.com/IDEA-Research/Grounded-SAM-2.git submodules
+cd submodules
+# 1. Patch PyTorch pour ignorer le mismatch CUDA 13.2 vs 12.8
+sed -i '479s/raise RuntimeError(CUDA_MISMATCH_MESSAGE.format(cuda_str_version, torch.version.cuda))/warnings.warn(CUDA_MISMATCH_MESSAGE.format(cuda_str_version, torch.version.cuda))/' \
+    /home/tino/apps/miniconda3/envs/track4world/lib/python3.11/site-packages/torch/utils/cpp_extension.py
+
+# 2. Patch setup.py de GroundingDINO pour retirer les archis non supportées par CUDA 13.2
+sed -i '/gencode=arch=compute_70/d' grounding_dino/setup.py
+sed -i '/gencode=arch=compute_75/d' grounding_dino/setup.py
+
+# 3. Variables d'environnement
+export CUDA_HOME=/usr/local/cuda
+export TORCH_CUDA_ARCH_LIST="8.9"
+export FORCE_CUDA=1
+
+# 4. Installation
+pip install --no-build-isolation -e grounding_dino
+pip install -e .
+pip install --no-build-isolation -e grounding_dino
+cd ..
+
+##SI JAMAIS GROUNDED DINO plante
+cd ~/Bureau/stage/Track4World/submodules/grounding_dino
+# Nettoyer les fichiers de build temporaires s'ils existent
+rm -rf build/ *.egg-info
+# Réinstaller
+pip install --no-build-isolation -e .
+
+#C'est ciao
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 62.00 MiB. GPU 0 has a total capacity of 5.64 GiB of which 61.00 MiB is free. Including non-PyTorch memory, this process has 5.56 GiB memory in use. Of the allocated memory 5.44 GiB is allocated by PyTorch, and 9.68 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+

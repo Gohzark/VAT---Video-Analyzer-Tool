@@ -1,0 +1,16 @@
+
+__pycache__/
+*.py[cod]
+
+outputs/
+ressources/
+
+# IDE et OS
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+# Fichiers système
+*.log
+*.tmp
