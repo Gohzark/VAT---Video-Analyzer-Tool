@@ -1,7 +1,7 @@
 import numpy as np
 import cv2 as cv
 from tracker.analyzerFourier import *
-
+    
 def run_dense(cap, video_name, mask, tracker):
 
     # Initialisation
@@ -93,5 +93,5 @@ def run_dense(cap, video_name, mask, tracker):
     
     # Calcul final
     print("Calcul des mouvements finaux...")
-    tracker.detectMovements(fps, video_name)
+    tracker.detectMovements(fps)
     print("Terminé.")

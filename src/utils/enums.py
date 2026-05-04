@@ -16,7 +16,7 @@ class Mask(Enum):
     
 class Tracker(Enum):
     Fourier = "Fourier"
-    Sparse = "StartAndStop"
+    StartStop = "StartStop"
     
     def __str__(self):
         return self.name

@@ -41,6 +41,7 @@ def run_sparse(cap, video_name, mask_option, tracker):
 
     # Take first frame and find corners in it
     old_gray = cv.cvtColor(old_frame, cv.COLOR_BGR2GRAY)
+    
     fg_mask = get_fg_mask(old_frame, mask_option)
     
     p0 = cv.goodFeaturesToTrack(old_gray, mask=fg_mask, **feature_params)
@@ -55,8 +56,6 @@ def run_sparse(cap, video_name, mask_option, tracker):
    
     fps = cap.get(cv.CAP_PROP_FPS)
     frame_count = cap.get(cv.CAP_PROP_FRAME_COUNT)
-    duration = frame_count / fps
-    of_count_calculated = 1
     while(1):
         ret, frame = cap.read()
         if not ret:
@@ -70,7 +69,6 @@ def run_sparse(cap, video_name, mask_option, tracker):
             p0 = cv.goodFeaturesToTrack(frame_gray, mask=fg_mask, **feature_params)
             
             if p0 is None:
-                of_count_calculated += 1
                 tracker.update(FlowData(
                     current_points=np.empty((0, 2)),
                     old_points=np.empty((0, 2)),
@@ -87,7 +85,6 @@ def run_sparse(cap, video_name, mask_option, tracker):
             good_old = p0[st == 1]
 
             if len(good_new) > 0:
-                of_count_calculated += 1
                 tracker.update(FlowData(
                     current_points=good_new,
                     old_points=good_old,
@@ -101,7 +98,6 @@ def run_sparse(cap, video_name, mask_option, tracker):
                                       color[i % len(color)].tolist(), -1)
                 p0 = good_new.reshape(-1, 1, 2)
             else:
-                of_count_calculated += 1
                 tracker.update(FlowData(
                     current_points=np.empty((0, 2)),
                     old_points=np.empty((0, 2)),
@@ -118,25 +114,7 @@ def run_sparse(cap, video_name, mask_option, tracker):
             break
         
     cv.destroyAllWindows()
-
-    movement_count_serie, frame_start_serie, frame_end_serie = tracker.detectMovements()
-    frame_count_serie = frame_end_serie - frame_start_serie
-    duration_serie = frame_count_serie / fps
-    timer_start_serie = frame_start_serie / fps
-    timer_end_serie = frame_end_serie / fps
-    #rythm_serie = tracker.getRythm(movement_count_serie, frame_count_serie, fps)
-
-    print("--INFOS DE LA VIDEO --")
-    print(f"fps de la video = {fps}")
-    print(f"nombre de frames de la video = {frame_count}")
-    print(f"durée de la video = {duration} sec")
-    print(f"nombre de flux optiques traités = {of_count_calculated}\n")
-
-    print("--INFOS DE LA SERIE --")
-    print(f"nombre de frames de la série de mouvements = {frame_count_serie}")
-    print(f"temps de début de la série de mouvements = {timer_start_serie} sec")
-    print(f"temps de fin de la série de mouvements = {timer_end_serie} sec")
-    print(f"durée totale de la série de mouvements = {timer_end_serie-timer_start_serie} sec")
-    print(f"mouvements détectés = {movement_count_serie}")
-    print(f"mouvements par seconde = {rythm_serie}")
-    print(f"mouvements par minute = {rythm_serie*60}")    
+    # Calcul final
+    print("Calcul des mouvements finaux...")
+    tracker.detectMovements(fps)
+    print("Terminé.")

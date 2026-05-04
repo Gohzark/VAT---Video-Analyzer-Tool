@@ -47,6 +47,15 @@ def createMask(cap, mask_type):
             print("Aucun masque de mouvement sélectionné, le flux optique sera calculé sur toute l'image.")
     return mask
 
+def initTracker(tracker_type, video_name, height, width, algorithm):
+    match tracker_type:
+        case Tracker.Fourier:
+            print("Tracker Fourier sélectionné")
+            return AnalyzerFourier(video_name, height, width, algorithm)
+        case Tracker.StartStop:
+            print("Tracker StartAndStop sélectionné")
+            return AnalyzerStartStop(video_name, height, width, algorithm)
+        
 def useAlgorithm(cap, algorithm, video_name, mask, tracker):
     match algorithm:
         case Algorithm.LK:
@@ -55,21 +64,12 @@ def useAlgorithm(cap, algorithm, video_name, mask, tracker):
         case Algorithm.FARNEBACK:
             print("Algorithme Farneback (dense) sélectionné")
             optical_flow_dense.run_dense(cap, video_name, mask, tracker)
-
-def initTracker(tracker_type, height, width):
-    match tracker_type:
-        case Tracker.Fourier:
-            print("Tracker Fourier sélectionné")
-            return AnalyzerFourier(height, width)
-        case Tracker.Sparse:
-            print("Tracker StartAndStop sélectionné")
-            return AnalyzerStartStop(height, width)
-        
+            
 def main(args):
     cap = openVideo(args.video)
     video_name = getVideoName(args.video)
     mask = createMask(cap, args.mask)
-    tracker = initTracker(args.tracker, cap.get(cv.CAP_PROP_FRAME_HEIGHT), cap.get(cv.CAP_PROP_FRAME_WIDTH))
+    tracker = initTracker(args.tracker, video_name, cap.get(cv.CAP_PROP_FRAME_HEIGHT), cap.get(cv.CAP_PROP_FRAME_WIDTH), args.algorithm)
     useAlgorithm(cap, args.algorithm, video_name, mask, tracker)
 
 if __name__ == "__main__":
