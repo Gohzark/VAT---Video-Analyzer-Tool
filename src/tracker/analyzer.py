@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
+from utils.flow_data import FlowData
 
-class Analyst(ABC):
+class Analyzer(ABC):
     image_width: int
     image_height: int
     
@@ -9,9 +10,9 @@ class Analyst(ABC):
         self.image_width = width
 
     @abstractmethod
-    def update  (self, frame, mask):
-        pass
-    
+    def update(self, flow_data: FlowData) -> None:
+        ...
+
     @abstractmethod
-    def detectMovements(self):
-        pass
+    def detectMovements(self, *args, **kwargs) -> None:
+        ...

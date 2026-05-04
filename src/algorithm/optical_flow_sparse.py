@@ -1,12 +1,6 @@
-import os
-import sys
-import warnings
-warnings.filterwarnings("ignore")
 import cv2 as cv
 import numpy as np
-import argparse
-from analyst.analystStartStop import *
-from enums import Algorithm, Mask
+from tracker.analyzerStartStop import *
 
 def get_fg_mask(frame, mask_option):
         if mask_option is not None:  
@@ -14,7 +8,7 @@ def get_fg_mask(frame, mask_option):
             return fg
         return None 
     
-def main(cap, video_name, mask_option, tracker):
+def run_sparse(cap, video_name, mask_option, tracker):
 
     ret, old_frame = cap.read()
 
@@ -77,7 +71,10 @@ def main(cap, video_name, mask_option, tracker):
             
             if p0 is None:
                 of_count_calculated += 1
-                tracker.update(np.empty((0, 2)), np.empty((0, 2)))
+                tracker.update(FlowData(
+                    current_points=np.empty((0, 2)),
+                    old_points=np.empty((0, 2)),
+                ))
                 cv.imshow('frame', frame) 
                 old_gray = frame_gray.copy()
                 if cv.waitKey(30) & 0xff == 27: 
@@ -86,23 +83,30 @@ def main(cap, video_name, mask_option, tracker):
 
         p1, st, err = cv.calcOpticalFlowPyrLK(old_gray, frame_gray, p0, None, **lk_params)
         if p1 is not None:
-            good_new = p1[st==1]
-            good_old = p0[st==1]
+            good_new = p1[st == 1]
+            good_old = p0[st == 1]
 
             if len(good_new) > 0:
                 of_count_calculated += 1
-                tracker.update(good_new, good_old)
+                tracker.update(FlowData(
+                    current_points=good_new,
+                    old_points=good_old,
+                ))
                 for i, (new, old) in enumerate(zip(good_new, good_old)):
                     a, b = new.ravel()
                     c, d = old.ravel()
-                    drawingMask = cv.line(drawingMask, (int(a), int(b)), (int(c), int(d)), color[i].tolist(), 2)
-                    frame = cv.circle(frame, (int(a), int(b)), 5, color[i].tolist(), -1)
-                
+                    drawingMask = cv.line(drawingMask, (int(a), int(b)), (int(c), int(d)),
+                                         color[i % len(color)].tolist(), 2)
+                    frame = cv.circle(frame, (int(a), int(b)), 5,
+                                      color[i % len(color)].tolist(), -1)
                 p0 = good_new.reshape(-1, 1, 2)
             else:
                 of_count_calculated += 1
-                tracker.update(np.empty((0, 2)), np.empty((0, 2)))  # ← frame vide
-                p0 = None 
+                tracker.update(FlowData(
+                    current_points=np.empty((0, 2)),
+                    old_points=np.empty((0, 2)),
+                ))
+                p0 = None
                 
         img = cv.add(frame, drawingMask)
         cv.imshow('frame', img)
@@ -120,7 +124,7 @@ def main(cap, video_name, mask_option, tracker):
     duration_serie = frame_count_serie / fps
     timer_start_serie = frame_start_serie / fps
     timer_end_serie = frame_end_serie / fps
-    rythm_serie = tracker.getRythm(movement_count_serie, frame_count_serie, fps)
+    #rythm_serie = tracker.getRythm(movement_count_serie, frame_count_serie, fps)
 
     print("--INFOS DE LA VIDEO --")
     print(f"fps de la video = {fps}")

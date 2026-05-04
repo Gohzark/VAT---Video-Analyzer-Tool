@@ -1,6 +1,0 @@
-ToDo list :
-
-- Tester Megaflow
-
-Later :
--Utiliser SAM 2 pour isoler le corps (créer un masque propre qui suit le mouvement) et appliquent ensuite GMA uniquement à l'intérieur de ce masque.

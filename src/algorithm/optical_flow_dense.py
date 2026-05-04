@@ -1,12 +1,8 @@
-import sys
 import numpy as np
 import cv2 as cv
-import os
-import argparse
-from analyst.analystFourier import *
-from enums import Algorithm, Mask
+from tracker.analyzerFourier import *
 
-def main(cap, video_name, mask):
+def run_dense(cap, video_name, mask, tracker):
 
     # Initialisation
     ret, frame = cap.read()
@@ -19,7 +15,6 @@ def main(cap, video_name, mask):
     hsv[..., 1] = 255
 
     hauteur, largeur, _ = frame.shape
-    tracker = AnalystDense(hauteur, largeur)
     fps = cap.get(cv.CAP_PROP_FPS)
         
 
@@ -76,7 +71,7 @@ def main(cap, video_name, mask):
         
         # Calcul des magnitudes et angles du flux optique
         mag, ang = cv.cartToPolar(flow[..., 0], flow[..., 1], angleInDegrees=True)
-        tracker.update(mag, ang)
+        tracker.update(FlowData(mag=mag, ang=ang))
         
         hsv[..., 0] = ang * 180 / np.pi / 2
         hsv[..., 2] = cv.normalize(mag, None, 0, 255, cv.NORM_MINMAX)
@@ -100,10 +95,3 @@ def main(cap, video_name, mask):
     print("Calcul des mouvements finaux...")
     tracker.detectMovements(fps, video_name)
     print("Terminé.")
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Farneback Dense Optical Flow')
-    parser.add_argument('video', type=str, help='chemin vers le fichier vidéo')
-    args = parser.parse_args()
-    
-    main(args)
