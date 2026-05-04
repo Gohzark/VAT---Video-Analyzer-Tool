@@ -1,31 +1,28 @@
 import numpy as np
 import matplotlib
-from scipy import signal
 matplotlib.use('Agg') 
 import matplotlib.pyplot as plt
+from analyst.analyst import Analyst
 from scipy.ndimage import minimum_filter
-import cv2 as cv
 from scipy.fft import fft, fftfreq
 from scipy.signal import find_peaks
 import os
 
 
 
-class AnalystDense:
+class AnalystFourier(Analyst):
     
     mean_angles: list[float]
     mean_magnitudes:list[float]
-    image_width: int
-    image_height: int
+  
     script_dir: str
     
     def __init__(self, height, width):
+        super().__init__(height, width)
         self.mean_magnitudes = []
         self.mean_angles = []
-        self.image_width = width
-        self.image_height = height
         self.script_dir = os.path.dirname(os.path.abspath(__file__))
-        self.output_dir = os.path.join(self.script_dir, "outputs")
+        self.output_dir = os.path.join(self.script_dir, "../outputs")
         os.makedirs(self.output_dir, exist_ok=True)
 
     def update(self, magn, ang):

@@ -3,21 +3,10 @@ import numpy as np
 import cv2 as cv
 import os
 import argparse
-from analystDense import *
+from analyst.analystFourier import *
+from enums import Algorithm, Mask
 
-def main(args):
-    # 1. Vérification du fichier
-    if not os.path.exists(args.video):
-        print(f"Erreur : Le fichier vidéo '{args.video}' est introuvable.")
-        sys.exit(1)
-
-    cap = cv.VideoCapture(args.video)
-    video_filename = os.path.basename(args.video)
-    video_name = os.path.splitext(video_filename)[0]
-
-    if not cap.isOpened():
-        print(f"Erreur : Impossible d'ouvrir la source vidéo : {args.video}")
-        sys.exit(1)
+def main(cap, video_name, mask):
 
     # Initialisation
     ret, frame = cap.read()
@@ -25,7 +14,7 @@ def main(args):
         print("Erreur : Impossible de lire la première image.")
         return
 
-    prvs = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+    previous_image = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
     hsv = np.zeros_like(frame)
     hsv[..., 1] = 255
 
@@ -33,20 +22,6 @@ def main(args):
     tracker = AnalystDense(hauteur, largeur)
     fps = cap.get(cv.CAP_PROP_FPS)
         
-    # Background Subtraction avec mixture de gaussiennes (MOG2)
-    duree_warmup = 10
-    backSub = cv.createBackgroundSubtractorMOG2(history=duree_warmup, varThreshold=30, detectShadows=False)
-    #Monter le seuil de détection (varThreshold) pour éviter les petits mouvements parasites, et réduire l'historique pour être plus réactif aux changements rapides
-
-    # Phase de Warm-up du background subtraction pour stabiliser le modèle avant de commencer à traiter les mouvements
-    print("Initialisation du fond (merci de patienter)...")
-    for i in range(duree_warmup):
-        ret, frame = cap.read()
-        if ret:
-            backSub.apply(frame)
-    print("Initialisation terminée, démarrage du traitement.")
-    
-    print("Traitement en cours... Appuyez sur 'Echap' pour quitter.")
 
     # Variables pour le lissage
     smooth_tx, smooth_ty = 0, 0
@@ -56,8 +31,10 @@ def main(args):
     while True:
         ret, frame = cap.read()
         if not ret: break 
-        
-        fg_mask = backSub.apply(frame)
+        if mask is not None:
+            fg_mask = mask.apply(frame)
+        else:
+            fg_mask = np.ones(frame.shape[:2], dtype=np.uint8) * 255
         kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, (5,5))
         fg_mask = cv.morphologyEx(fg_mask, cv.MORPH_OPEN, kernel)
         h, w = frame.shape[:2]
@@ -85,12 +62,12 @@ def main(args):
                                 
         M_transform = np.float32([[1, 0, smooth_tx], [0, 1, smooth_ty]])
         
-        # Trasnlation de l'image pour centrer le mouvement
+        # Translation de l'image pour centrer le mouvement
         frame_centered = cv.warpAffine(frame, M_transform, (w, h))
         frame_gray = cv.cvtColor(frame_centered, cv.COLOR_BGR2GRAY)
         
         # Calcul du flux optique avec Farneback
-        flow = cv.calcOpticalFlowFarneback(prvs, frame_gray, None, 0.5, 3, 15, 3, 5, 1.2, 0)
+        flow = cv.calcOpticalFlowFarneback(previous_image, frame_gray, None, 0.5, 3, 15, 3, 5, 1.2, 0)
         
         # On masque le flux optique pour ne garder que les zones de mouvement détectées par le background subtraction
         mask_centered = cv.warpAffine(fg_mask, M_transform, (w, h))
@@ -108,7 +85,7 @@ def main(args):
         
         cv.imshow('Frame Centered', overlay)
         
-        prvs = frame_gray
+        previous_image = frame_gray
         
         # Sortie clavier (Echap)
         if cv.waitKey(1) == 27: 
@@ -125,7 +102,7 @@ def main(args):
     print("Terminé.")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Lucas-Kanade Optical Flow')
+    parser = argparse.ArgumentParser(description='Farneback Dense Optical Flow')
     parser.add_argument('video', type=str, help='chemin vers le fichier vidéo')
     args = parser.parse_args()
     

@@ -1,19 +1,16 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from scipy.ndimage import minimum_filter
+from analyst.analyst import Analyst
 
-class AnalystSparse:
+class AnalystStartStop(Analyst):
     means_x: list[float]
     means_y: list[float]
-    image_width: int
-    image_height: int
     threshold: float
     
     def __init__(self, height, width, threshold=0.2):
+        super().__init__(height, width)
         self.means_x = []
         self.means_y = []
-        self.image_width = width
-        self.image_height = height
         self.threshold = threshold
         
     def update(self, currents_points, old_points):
@@ -32,19 +29,6 @@ class AnalystSparse:
                 self.means_x.append(self.image_width / 2)
                 self.means_y.append(self.image_height / 2)
         
-    
-    def printGraph(self):
-        frames = range(len(self.means_x))
-        plt.plot(frames, np.array(self.means_x)/self.image_width, 
-                 label='Position X (Horizontal)', color='blue', linewidth=1.5)
-        plt.plot(frames, np.array(self.means_y)/self.image_height, 
-                 label='Position Y (Vertical)', color='red', linestyle='--', linewidth=1.5)
-        plt.title("Évolution de la position moyenne de l'objet")
-        plt.xlabel('Frames')
-        plt.ylabel('Position normalisée (0.0 à 1.0)')
-        plt.legend()
-        plt.grid(True, linestyle=':', alpha=0.6)
-        plt.show()
     
     #Pas terrible, détecte les arrêts et les départs de mouvements, mais pas les mouvements continus.
     def detectMovements(self):
