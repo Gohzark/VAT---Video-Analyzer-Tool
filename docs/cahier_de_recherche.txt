@@ -1,23 +1,55 @@
 Semaine 1:
 
-Problème : 
+Objectif : 
 
-    L'objectif du stage était d'extraire des informations tel que le rythme à partir d'une vidéo de sport ou de danse dans laquelle des mouvements sont effectués à une certaine fréquence.
+    Extraire des informations telles que le rythme à partir d'une vidéo de sport ou de danse dans laquelle des mouvements sont effectués à une certaine fréquence.
 
 
-Protocole expérimental :
+Protocole :
 
-    La première étape consistait à récupérer du signal depuis une vidéo.
-    Dans un premier temps, j'ai déterminer des points à traquer sur l'image avec l'algorithme Shi Tomasi, grâce à la fonction cv.goodFeaturesToTrack de OpenCV. C'est un algorithme de détections de coins de 1994. Il se base sur la détection d'un fort gradient (une forte variation d'intensité lumineuse) dans toutes les directions (horizontale et verticale) pour considérer que c'est un coin.
-    Ensuite, pour traquer ces points sur l'image suivante, j'ai utiliser Lucas-Kanade avec la méthode pyramidale (1981) grâce à la fonction cv.calcOpticalFlowPyrLK de OpenCV. C'est un algorithme sparse donc qui suit seulement certains points déterminés sur l'image, ce qui lui confère l'avantage d'être rapide à exécuter.
+    La première étape était de récupérer du signal depuis une vidéo.
+
+    Dans un premier temps, j'ai déterminer des points à traquer sur l'image avec l'algorithme Shi-Tomasi (1994), grâce à la fonction goodFeaturesToTrack() d'OpenCV. C'est un algorithme de détections de coins qui se base sur la détection d'un fort gradient (une forte variation d'intensité lumineuse) dans toutes les directions (horizontale et verticale) pour considérer que c'est un coin.
+    Ensuite, pour traquer ces points entre les images, j'ai utiliser Lucas-Kanade, un algorithme sparse, avec la méthode pyramidale (1981) grâce à la fonction Ensuite, pour traquer ces points sur l'image suivante, j'ai utilisé Lucas-Kanade (1981) dans sa version pyramidale (Bouguet, 2000) grâce à la fonction calcOpticalFlowPyrLK() de OpenCV. C'est un algorithme sparse donc qui suit seulement certains points déterminés sur l'image, ce qui lui confère l'avantage d'être rapide à exécuter.
     Ainsi, on récupère le flux optique entre chaque paire d'images. C'est-à-dire un ensemble de vecteurs de déplacement de chaque point traqué par Lucas-Kanade entre les 2 images.
-    Après avoir récupéré ce signal, il fallait l'étudier pour en extraire un rythme.
+    
+    Dans un second temps, après avoir récupéré ce signal, il a fallu l'étudier pour en extraire un rythme.
     L'analyse de la vidéo a guidé mon choix de méthode car il s'agissait d'une vidéo d'un individu effectuant des tractions au poids du corps en suivant un rythme régulier, et marquant un temps d'arrêt en bas et en haut du mouvement.
     Je suis donc parti de la supposition qu'en parvenant à détecter chaque début et chaque fin de mouvement, je pourrais compter le nombre de répétitions effectué et extraire un rythme.
+
     J'ai alors créer un analyseur dont le rôle était de traiter ce signal.
     À chaque frame, celui-ci calcule le centre de masse des pixels en mouvement (c'est à dire ceux dont le flux optique dépasse un certain seuil) et le stocke dans une liste. Si aucun mouvement n'est détecté, il répète la dernière position connue.
-    Ensuite, il calcule les déplacements frame par frame (différences successives des positions), puis applique un filtre minimum dans une fenêtre glissante de taille 5 pour lisser le signal et éliminer le bruit.
-    En effet, la détection de flux optique est bruitée par nature — un pixel isolé peut bouger d'une frame à l'autre sans que ce soit un vrai mouvement. Le filtre minimum et la fenêtre agissent comme un gate : seuls les mouvements qui durent au moins quelques frames consécutives passent le seuil, ce qui rend le comptage des mouvements beaucoup plus fiable.
+    Ensuite, il calcule les déplacements frame par frame (différences successives des positions), puis applique un filtre minimum dans une fenêtre glissante pour lisser le signal et éliminer le bruit.
+    En effet, la détection de flux optique est bruitée par nature — un pixel isolé peut bouger d'une frame à l'autre sans que ce soit un vrai mouvement. Le filtre minimum et la fenêtre glissante agissent comme un gate : seuls les mouvements qui durent au moins quelques frames consécutives passent le seuil, ce qui rend le comptage des mouvements beaucoup plus fiable.
     Puis, ce signal lissé est converti en vecteur booléen (mouvement / pas de mouvement), ce qui permet de compter le nombre de séquences de mouvement distinctes et d'en identifier les bornes temporelles (début, fin, durée).
-    Enfin, il calcule un rythme (fréquence des mouvements sur la durée de la série) et enregistre toutes ces métriques.
+    Enfin, l'analyseur calcule un rythme (fréquence des mouvements sur la durée de la série) et enregistre toutes ces métriques. 
+
+Résultat : 
+
+    Tous les résultats du projet sont localisés dans le répertoire "src/outputs", sous la forme "<type_resultat>_<nom_video>_<algo_utilise>_<masque_applique>_<analyseur_utilise>".
+    Par exemple, les résultats de ce test sont dans le fichier "src/outputs/data_pu_LK_NoMask_trackerSS.txt".
+
+    D'après les résultats fournis par l'analyseur, 10 mouvements sont détectés.
+    Cependant, après avoir observé la vidéo, il n'y a pourtant que 3 mouvements de tractions soit 6 mouvements (montée et descente) que l'algorithme aurait du détecter.
+
+Analyse : 
+
+    L'inexactitude des résultats s'explique par la nature des features employées.
+    En premier lieu, la plupart des features sont placées sur des objets du décor car ils présentent des coins de meilleure qualité que le corps humain. On peut supposer que sur d'autres vidéos, il pourrait n'y avoir aucun point placé sur le sujet d'étude, ce qui rendrait le tracking totalement inexploitable.
+    Par ailleurs, en observant l'interface graphique — qui affiche les trajectoires des points trackés (lignes colorées) et leurs positions courantes (points colorés) — on remarque que les points glissent d'une partie du corps à une autre, voire se fixent sur le fond. Ce comportement s'explique par le fait que Shi-Tomasi s'accroche aux coins et contours nets de l'image, or sur un corps humain en mouvement ces features sont instables. 
+    L'analyseur interprète alors ces réajustements comme des débuts et fins de mouvements distincts, alors qu'il s'agit du même mouvement continu mal suivi, ce qui introduit un biais dans le comptage.
+    Enfin, lors de la fin de la descente du mouvement, on observe un léger balancement des pieds qui peut être comptabilisé comme un mouvement à part entière et altérer les résultats.
+
+Semaine 2 :
+
+    Objectif :
+
+    Trouver une alternative au tracking des points par Shi-Tomasi pour avoir des features mieux adaptée au corps humain.
+
+    Protocole :
+
+    Plutôt que de chercher une autre façon de déterminer des features à suivre pour utiliser Lucas-Kanade, je me suis orienté vers l'algorithme Farneback (2003) grâce à la fonction calcOpticalFlowFarneback d'OpenCV.
+    Il s'agit d'un algorithme dense, ce qui permet de s'affranchir de l'étape de détection des features en analysant le mouvement de l'image entière, ce qui est plus robuste que Shi-Tomasi + Lucas-Kanade quand le sujet est un corps humain dont les contours nets sont difficiles à traquer précisément mais plus lent car il requiert beaucoup plus de calculs.
+
+    De plus, pour suprimmer le bruit causé par les micro variations de luminosité de la vidéo, j'ai appliqué un masque de suppression d'arrière-plan via la fonction "createBackgroundSubtractorMOG2" d'OpenCV, basée sur l'algorithme MOG2 (Mixture of Gaussians).
 
