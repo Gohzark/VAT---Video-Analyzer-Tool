@@ -1,4 +1,4 @@
-Semaine 1:
+Etude 1:
 
 Objectif : 
 
@@ -40,7 +40,7 @@ Analyse :
     L'analyseur interprète alors ces réajustements comme des débuts et fins de mouvements distincts, alors qu'il s'agit du même mouvement continu mal suivi, ce qui introduit un biais dans le comptage.
     Enfin, lors de la fin de la descente du mouvement, on observe un léger balancement des pieds qui peut être comptabilisé comme un mouvement à part entière et altérer les résultats.
 
-Semaine 2 :
+Etude 2 :
 
     Objectif :
 
@@ -53,3 +53,19 @@ Semaine 2 :
 
     De plus, pour suprimmer le bruit causé par les micro variations de luminosité de la vidéo, j'ai appliqué un masque de suppression d'arrière-plan via la fonction "createBackgroundSubtractorMOG2" d'OpenCV, basée sur l'algorithme MOG2 (Mixture of Gaussians).
 
+    Résultat : 
+
+    Avec ce signal de meilleure qualité, l'analyseur parvient bel et bien à détecter 6 mouvements conformément à ce qui est attendu.
+
+    Analyse : 
+
+    Farneback fournit un champ de vecteurs dense donc tous les pixels dont la magnitude dépasse un seuil contribuent au calcul de la moyenne, ce qui le stabilise considérablement.
+
+Etude 3 :
+
+    Objectif : 
+
+    Définir une autre manière de détecter les mouvements pour adapter l'analyseur à tout type de vidéo (comme de la course à pied) dans laquelle le mouvement est continu 
+    et donc pour lequel on peut pas utiliser la méthode vu précédemment dans ce que j'ai nommé "analyseurStartStop".
+
+    Protocole :
