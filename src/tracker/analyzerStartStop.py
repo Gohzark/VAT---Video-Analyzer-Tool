@@ -72,7 +72,8 @@ class AnalyzerStartStop(Analyzer):
         norms = np.linalg.norm(matrix_diffs, axis=1)
         clean_window = minimum_filter(norms, size=5, mode='nearest')
         vecteur_bool = clean_window > 0
-        changes = np.diff(vecteur_bool.astype(int))        
+        changes = np.diff(vecteur_bool.astype(int))   
+        print(changes)     
         nb_movement = np.sum(changes == 1)
         indices_start_movements = np.argwhere(changes == 1)
         indices_end_movements = np.argwhere(changes == -1)

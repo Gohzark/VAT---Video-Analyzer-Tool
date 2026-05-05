@@ -1,0 +1,23 @@
+Semaine 1:
+
+Problème : 
+
+    L'objectif du stage était d'extraire des informations tel que le rythme à partir d'une vidéo de sport ou de danse dans laquelle des mouvements sont effectués à une certaine fréquence.
+
+
+Protocole expérimental :
+
+    La première étape consistait à récupérer du signal depuis une vidéo.
+    Dans un premier temps, j'ai déterminer des points à traquer sur l'image avec l'algorithme Shi Tomasi, grâce à la fonction cv.goodFeaturesToTrack de OpenCV. C'est un algorithme de détections de coins de 1994. Il se base sur la détection d'un fort gradient (une forte variation d'intensité lumineuse) dans toutes les directions (horizontale et verticale) pour considérer que c'est un coin.
+    Ensuite, pour traquer ces points sur l'image suivante, j'ai utiliser Lucas-Kanade avec la méthode pyramidale (1981) grâce à la fonction cv.calcOpticalFlowPyrLK de OpenCV. C'est un algorithme sparse donc qui suit seulement certains points déterminés sur l'image, ce qui lui confère l'avantage d'être rapide à exécuter.
+    Ainsi, on récupère le flux optique entre chaque paire d'images. C'est-à-dire un ensemble de vecteurs de déplacement de chaque point traqué par Lucas-Kanade entre les 2 images.
+    Après avoir récupéré ce signal, il fallait l'étudier pour en extraire un rythme.
+    L'analyse de la vidéo a guidé mon choix de méthode car il s'agissait d'une vidéo d'un individu effectuant des tractions au poids du corps en suivant un rythme régulier, et marquant un temps d'arrêt en bas et en haut du mouvement.
+    Je suis donc parti de la supposition qu'en parvenant à détecter chaque début et chaque fin de mouvement, je pourrais compter le nombre de répétitions effectué et extraire un rythme.
+    J'ai alors créer un analyseur dont le rôle était de traiter ce signal.
+    À chaque frame, celui-ci calcule le centre de masse des pixels en mouvement (c'est à dire ceux dont le flux optique dépasse un certain seuil) et le stocke dans une liste. Si aucun mouvement n'est détecté, il répète la dernière position connue.
+    Ensuite, il calcule les déplacements frame par frame (différences successives des positions), puis applique un filtre minimum dans une fenêtre glissante de taille 5 pour lisser le signal et éliminer le bruit.
+    En effet, la détection de flux optique est bruitée par nature — un pixel isolé peut bouger d'une frame à l'autre sans que ce soit un vrai mouvement. Le filtre minimum et la fenêtre agissent comme un gate : seuls les mouvements qui durent au moins quelques frames consécutives passent le seuil, ce qui rend le comptage des mouvements beaucoup plus fiable.
+    Puis, ce signal lissé est converti en vecteur booléen (mouvement / pas de mouvement), ce qui permet de compter le nombre de séquences de mouvement distinctes et d'en identifier les bornes temporelles (début, fin, durée).
+    Enfin, il calcule un rythme (fréquence des mouvements sur la durée de la série) et enregistre toutes ces métriques.
+

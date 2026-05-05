@@ -33,7 +33,7 @@ def run_sparse(cap, video_name, mask_option, tracker):
     # maxLevel : nombre de niveaux de la pyramide d'images
     # criteria : critère d'arrêt pour l'algorithme de Lucas-Kanade (combinaison de nombre maximum d'itérations et de précision minimale)
     lk_params = dict( winSize  = (15, 15),
-                    maxLevel = 2,
+                    maxLevel = 5,
                     criteria = (cv.TERM_CRITERIA_EPS | cv.TERM_CRITERIA_COUNT, 10, 0.03))
 
     # Create some random colors
