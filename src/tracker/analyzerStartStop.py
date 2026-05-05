@@ -11,8 +11,8 @@ class AnalyzerStartStop(Analyzer):
     means_y: list
     threshold: float
 
-    def __init__(self, image_path: str, height: int, width: int, algorithm: Algorithm, threshold: float = 0.2):
-        super().__init__(image_path, height, width, algorithm)
+    def __init__(self, image_path: str, height: int, width: int, algorithm: Algorithm, mask: str, threshold: float = 0.2):
+        super().__init__(image_path, height, width, algorithm, mask)
         self.means_x   = []
         self.means_y   = []
         self.threshold = threshold
@@ -72,9 +72,7 @@ class AnalyzerStartStop(Analyzer):
         norms = np.linalg.norm(matrix_diffs, axis=1)
         clean_window = minimum_filter(norms, size=5, mode='nearest')
         vecteur_bool = clean_window > 0
-        changes = np.diff(vecteur_bool.astype(int))
-        print(changes)
-        
+        changes = np.diff(vecteur_bool.astype(int))        
         nb_movement = np.sum(changes == 1)
         indices_start_movements = np.argwhere(changes == 1)
         indices_end_movements = np.argwhere(changes == -1)

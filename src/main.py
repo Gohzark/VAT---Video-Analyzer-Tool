@@ -43,18 +43,18 @@ def createMask(cap, mask_type):
                     mask.apply(frame)
             print("Initialisation terminée, démarrage du traitement.")
             cap.set(cv.CAP_PROP_POS_FRAMES, 0)
-        case Mask.No:
+        case Mask.NoMask:
             print("Aucun masque de mouvement sélectionné, le flux optique sera calculé sur toute l'image.")
     return mask
 
-def initTracker(tracker_type, video_name, height, width, algorithm):
+def initTracker(tracker_type, video_name, height, width, algorithm, mask):
     match tracker_type:
         case Tracker.Fourier:
             print("Tracker Fourier sélectionné")
-            return AnalyzerFourier(video_name, height, width, algorithm)
+            return AnalyzerFourier(video_name, height, width, algorithm, mask)
         case Tracker.StartStop:
             print("Tracker StartAndStop sélectionné")
-            return AnalyzerStartStop(video_name, height, width, algorithm)
+            return AnalyzerStartStop(video_name, height, width, algorithm, mask)
         
 def useAlgorithm(cap, algorithm, video_name, mask, tracker):
     match algorithm:
@@ -69,7 +69,7 @@ def main(args):
     cap = openVideo(args.video)
     video_name = getVideoName(args.video)
     mask = createMask(cap, args.mask)
-    tracker = initTracker(args.tracker, video_name, cap.get(cv.CAP_PROP_FRAME_HEIGHT), cap.get(cv.CAP_PROP_FRAME_WIDTH), args.algorithm)
+    tracker = initTracker(args.tracker, video_name, cap.get(cv.CAP_PROP_FRAME_HEIGHT), cap.get(cv.CAP_PROP_FRAME_WIDTH), args.algorithm, args.mask.value)
     useAlgorithm(cap, args.algorithm, video_name, mask, tracker)
 
 if __name__ == "__main__":
@@ -92,3 +92,8 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     main(args)
+    
+#exemple : /usr/bin/python3 /home/tino/Bureau/stage/Video_Analyzer_Tool/src/main.py ./ressources/pu.mp4 Farneback MO2 StartStop
+
+
+
