@@ -1,4 +1,5 @@
 import os
+import sys
 import numpy as np
 import matplotlib
 matplotlib.use('Agg')
@@ -6,7 +7,7 @@ import matplotlib.pyplot as plt
 from .analyzer import *
 from utils.flow_data import FlowData
 
-class AnalyzerFourier(Analyzer):
+class AnalyzerRepetingSignal(Analyzer):
 
     mean_angles: list
     mean_magnitudes: list
@@ -53,48 +54,45 @@ class AnalyzerFourier(Analyzer):
         mean_magnitudes_array = np.array(self.mean_magnitudes)
         indices_non_nuls = np.nonzero(mean_magnitudes_array)[0]
 
-        if len(indices_non_nuls) < 2:
-            print("[AnalyzerFourier] Pas assez de données non nulles pour la FFT.")
+        if len(indices_non_nuls) < 10: # Augmenté car 2 points ne font pas un cycle
             return
 
         idx_debut = indices_non_nuls[0]
         idx_fin = indices_non_nuls[-1]
-        N = idx_fin - idx_debut
-        segment = mean_magnitudes_array[idx_debut:idx_fin + 1]
-        fft_result = np.fft.fft(segment)
-        freqs = np.fft.fftfreq(N, d=1 / fps)
-        freqs_pos = freqs[:N // 2]
-        amplitudes = np.abs(fft_result[:N // 2]) * 2 / N
-
-        fig, ax = plt.subplots(figsize=(10, 4))
-        ax.plot(freqs_pos, amplitudes, color='steelblue')
-        ax.set_xlabel("Fréquence (Hz)")
-        ax.set_ylabel("Amplitude")
-        ax.set_title("Spectre FFT")
-        ax.grid(True, alpha=0.3)
-        plt.tight_layout()
-        plt.savefig(os.path.join(self.output_dir, f"fft_{self.prefixe_file}.png"), dpi=150)
-        plt.close()
-
-        f_min = 0.1
-        mask              = freqs_pos >= f_min
-        idx_pic           = np.argmax(amplitudes[mask])
-        frequence_dom     = round(freqs_pos[mask][idx_pic], 2)
-        amp_pic           = amplitudes[mask][idx_pic]
-        amp_moyenne       = np.mean(amplitudes[mask])
-        ratio             = amp_pic / amp_moyenne
-        self.plot_evolution(self.mean_magnitudes, self.mean_angles, fps)
-        self.writeData(N, fps, frequence_dom, ratio)
+        magnitudes_utiles = mean_magnitudes_array[idx_debut : idx_fin + 1]
+        N = len(magnitudes_utiles)
         
-    def writeData(self, nb_frames: int, fps: int, frequence_dom: float, ratio: float):
+        min_gap = max(1, int(0.2 * fps)) 
+        max_gap = N // 2
+        
+        if min_gap >= max_gap:
+            print("[Warning] Signal trop court pour la fréquence minimale demandée.")
+            return
+
+        bestGap = 0
+        bestError = sys.float_info.max
+
+        for i in range(min_gap, max_gap):
+            current_cost = self.costByGap(magnitudes_utiles, i)
+            
+            if current_cost < bestError:
+                bestError = current_cost
+                bestGap = i
+                
+        if bestGap > 0:
+            self.writeData(bestGap / fps)
+        
+    def costByGap(self, l1, gap):
+        if gap <= 0 or gap >= len(l1):
+            return sys.float_info.max
+        
+        diff = l1[gap:] - l1[:-gap]
+        return np.mean(diff**2)
+        
+    def writeData(self, periode: float):
         file_path = f"data_{self.prefixe_file}.txt"
-        duree = nb_frames / fps
-        nb_mouvements_theorique = int(duree * frequence_dom)
         with open(os.path.join(self.output_dir, file_path), "w", encoding="utf-8") as f:
-            f.write(f"Rythme de mouvements : {frequence_dom} mouvements par seconde\n")
-            f.write(f"Ratio (pic combien de fois plus grand que la moyenne) : {ratio:.1f}x\n")
-            f.write(f"Nombre de mouvements : {nb_mouvements_theorique}\n")
-            f.write(f"Mouvements par minute : {frequence_dom * 60}\n")
+            f.write(f"Période entre chaque répétition de mouvements : {periode} secondes\n")
 
     def plot_evolution(self, magnitudes, angles, fps):
         file_path = f"mouvement_{self.prefixe_file}.png"
@@ -119,4 +117,4 @@ class AnalyzerFourier(Analyzer):
         plt.close()
         
     def toString(self) -> str:
-        return "trackerFourier"
+        return "trackerRS"

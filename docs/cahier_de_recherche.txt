@@ -88,12 +88,35 @@ Etude 3 :
 
     Test : 
 
-        Vidéo de course sur tapis (course_tapis.mp4) : caméra fixe, mouvement continu.
+        1) Vidéo de course sur tapis (course_tapis.mp4) : caméra fixe, mouvement continu.
+        2) pu.mp4
 
     Résultats :
 
-        
+        1) D'après l'étude visuelle de la vidéo, le coureur effectue un total de 30 cycles (jambe gauche , jambe droite) soit 60 appuis durant la vidéo.
+        La fréquence dominante déterminée par l'analyseur est 2.96 Hz c'est-à-dire un rythme de 177.6 mouvements par minutes soit ~59 mouvements sur les 20 secondes de course de la vidéo.
+        Donc l'analyseur à fourni un bon résultat sur cette vidéo.
 
+        2) L'analyseur détecte un pic dominant à 0.51 soit 7 mouvements sur les 14 secondes de tractions de la vidéo, alors que le résultat attendu était de 6.
+
+    Analyse :
+
+        1) La FFT correspond très bien à ce genre de signal puisque les mouvements sont réguliers tout au long.
+        2) La FFT ne correspond pas bien à l'étude de ce genre de signal car elle décompose n'importe quel signal en somme de sinusoïdes, 
+        même si ce signal n'est pas du tout sinusoïdal. Or ici, le signal est composé de pics séparés de silences — c'est ce qu'on appelle un signal impulsionnel. 
+        Or une impulsion courte, quand on la décompose en sinusoïdes, nécessite une infinité de fréquences pour être représentée exactement.
+
+Étude 4 :
+
+    Objectif : 
+
+        Réussir à extraire une fréquence de répétition d'un motif dans un signal impulsionnel.
+
+    Protocole : 
+
+        Utiliser l'autocorrélation pour mesurer à quel point le signal ressemble à lui-même pour chaque décalage de X secondes. 
+
+    
 
 
 

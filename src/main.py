@@ -4,6 +4,7 @@ import os
 import argparse
 from tracker.analyzerFourier import AnalyzerFourier
 from tracker.analyzerStartStop import AnalyzerStartStop
+from tracker.analyzerRepetingSignal import AnalyzerRepetingSignal
 import algorithm.optical_flow_dense as optical_flow_dense
 import algorithm.optical_flow_sparse as optical_flow_sparse
 
@@ -52,9 +53,12 @@ def initTracker(tracker_type, video_name, height, width, algorithm, mask, center
         case Tracker.Fourier:
             print("Tracker Fourier sélectionné")
             return AnalyzerFourier(video_name, height, width, algorithm, mask, centering)
-        case Tracker.StartStop:
-            print("Tracker StartAndStop sélectionné")
+        case Tracker.SS:
+            print("Tracker StartStop sélectionné")
             return AnalyzerStartStop(video_name, height, width, algorithm, mask, centering)
+        case Tracker.RS:
+            print("Tracker RepetingSignal sélectionné")
+            return AnalyzerRepetingSignal(video_name, height, width, algorithm, mask, centering)
         
 def useAlgorithm(cap, algorithm, mask, tracker, centering):
     match algorithm:
