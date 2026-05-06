@@ -47,30 +47,30 @@ def createMask(cap, mask_type):
             print("Aucun masque de mouvement sélectionné, le flux optique sera calculé sur toute l'image.")
     return mask
 
-def initTracker(tracker_type, video_name, height, width, algorithm, mask):
+def initTracker(tracker_type, video_name, height, width, algorithm, mask, centering):
     match tracker_type:
         case Tracker.Fourier:
             print("Tracker Fourier sélectionné")
-            return AnalyzerFourier(video_name, height, width, algorithm, mask)
+            return AnalyzerFourier(video_name, height, width, algorithm, mask, centering)
         case Tracker.StartStop:
             print("Tracker StartAndStop sélectionné")
-            return AnalyzerStartStop(video_name, height, width, algorithm, mask)
+            return AnalyzerStartStop(video_name, height, width, algorithm, mask, centering)
         
-def useAlgorithm(cap, algorithm, video_name, mask, tracker):
+def useAlgorithm(cap, algorithm, mask, tracker, centering):
     match algorithm:
         case Algorithm.LK:
             print("Algorithme Lucas-Kanade (sparse) sélectionné")
-            optical_flow_sparse.run_sparse(cap, video_name, mask, tracker)
-        case Algorithm.FARNEBACK:
+            optical_flow_sparse.run_sparse(cap, mask, tracker, centering)
+        case Algorithm.Farneback:
             print("Algorithme Farneback (dense) sélectionné")
-            optical_flow_dense.run_dense(cap, video_name, mask, tracker)
+            optical_flow_dense.run_dense(cap, mask, tracker, centering)
             
 def main(args):
     cap = openVideo(args.video)
     video_name = getVideoName(args.video)
     mask = createMask(cap, args.mask)
-    tracker = initTracker(args.tracker, video_name, cap.get(cv.CAP_PROP_FRAME_HEIGHT), cap.get(cv.CAP_PROP_FRAME_WIDTH), args.algorithm, args.mask.value)
-    useAlgorithm(cap, args.algorithm, video_name, mask, tracker)
+    tracker = initTracker(args.tracker, video_name, cap.get(cv.CAP_PROP_FRAME_HEIGHT), cap.get(cv.CAP_PROP_FRAME_WIDTH), args.algorithm, args.mask.value, args.centering)
+    useAlgorithm(cap, args.algorithm, mask, tracker, args.centering)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Video Analyzer Tool')
@@ -89,6 +89,11 @@ if __name__ == "__main__":
         'tracker',
         type=Tracker,
         choices=list(Tracker)
+    )
+    parser.add_argument(
+        '--centering',
+        action='store_true',
+        default=False,
     )
     args = parser.parse_args()
     main(args)

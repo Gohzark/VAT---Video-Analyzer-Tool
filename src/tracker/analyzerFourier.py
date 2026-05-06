@@ -12,8 +12,8 @@ class AnalyzerFourier(Analyzer):
     mean_magnitudes: list
     script_dir: str
     
-    def __init__(self, image_path: str, height: int, width: int, algorithm: Algorithm, mask: str):
-        super().__init__(image_path, height, width, algorithm, mask)
+    def __init__(self, image_path: str, height: int, width: int, algorithm: Algorithm, mask: str, centering: bool):
+        super().__init__(image_path, height, width, algorithm, mask, centering)
         self.mean_magnitudes = []
         self.mean_angles = []
 

@@ -8,7 +8,7 @@ def get_fg_mask(frame, mask_option):
             return fg
         return None 
     
-def run_sparse(cap, video_name, mask_option, tracker):
+def run_sparse(cap, mask_option, tracker):
 
     ret, old_frame = cap.read()
 

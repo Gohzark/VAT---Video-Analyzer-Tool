@@ -11,8 +11,8 @@ class AnalyzerStartStop(Analyzer):
     means_y: list
     threshold: float
 
-    def __init__(self, image_path: str, height: int, width: int, algorithm: Algorithm, mask: str, threshold: float = 0.2):
-        super().__init__(image_path, height, width, algorithm, mask)
+    def __init__(self, image_path: str, height: int, width: int, algorithm: Algorithm, mask: str, centering: bool, threshold: float = 0.2):
+        super().__init__(image_path, height, width, algorithm, mask, centering)
         self.means_x   = []
         self.means_y   = []
         self.threshold = threshold

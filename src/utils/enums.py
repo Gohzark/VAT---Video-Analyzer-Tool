@@ -2,7 +2,7 @@ from enum import Enum
 
 class Algorithm(Enum):
     LK = "LK"
-    FARNEBACK = "Farneback"
+    Farneback = "Farneback"
 
     def __str__(self):
         return self.name
@@ -16,6 +16,13 @@ class Mask(Enum):
     
 class Tracker(Enum):
     Fourier = "Fourier"
+    StartStop = "StartStop"
+    
+    def __str__(self):
+        return self.name
+    
+class Centering(Enum):
+    Centering = "Fourier"
     StartStop = "StartStop"
     
     def __str__(self):

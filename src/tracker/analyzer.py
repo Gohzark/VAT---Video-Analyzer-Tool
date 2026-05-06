@@ -10,12 +10,14 @@ class Analyzer(ABC):
     algorithm: Algorithm
     mask: str
     
-    def __init__(self, image_path: str, height: int, width: int, algorithm: Algorithm, mask: str):
+    def __init__(self, image_path: str, height: int, width: int, algorithm: Algorithm, mask: str, centering: bool):
         self.image_height = height
         self.image_width = width
         self.algorithm = algorithm
         self.mask = mask
         self.prefixe_file = f"{image_path}_{self.algorithm.value}_{self.mask}_{self.toString()}"
+        if (mask is not None and centering):
+            self.prefixe_file += "_centering"
         self.script_dir = os.path.dirname(os.path.abspath(__file__))
         self.output_dir = os.path.join(self.script_dir, "../../outputs")
         os.makedirs(self.output_dir, exist_ok=True)
