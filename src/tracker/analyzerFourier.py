@@ -56,9 +56,6 @@ class AnalyzerFourier(Analyzer):
         freqs_pos  = freqs[:N // 2]
         amplitudes = np.abs(fft_result[:N // 2]) * 2 / N
 
-        couples        = list(zip(freqs_pos, amplitudes))
-        couples_triees = sorted(couples, key=lambda x: x[1], reverse=True)
-
         fig, ax = plt.subplots(figsize=(10, 4))
         ax.plot(freqs_pos, amplitudes, color='steelblue')
         ax.set_xlabel("Fréquence (Hz)")

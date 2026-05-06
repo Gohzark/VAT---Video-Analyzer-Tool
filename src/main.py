@@ -29,8 +29,8 @@ def getVideoName(video_path):
 def createMask(cap, mask_type):
     mask = None
     match mask_type:
-        case Mask.MO2:
-            print("Masque MO2 (Mixture de gaussiennes) sélectionné")
+        case Mask.MOG2:
+            print("Masque MOG2 (Mixture de gaussiennes) sélectionné")
             #Monter le seuil de détection (varThreshold) pour éviter les petits mouvements parasites, et réduire l'historique pour être plus réactif aux changements rapides
             warmup_duration = 10
             background_threshold = 30
@@ -93,7 +93,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     main(args)
     
-#exemple : /usr/bin/python3 /home/tino/Bureau/stage/Video_Analyzer_Tool/src/main.py ./ressources/pu.mp4 Farneback MO2 StartStop
+#exemple : /usr/bin/python3 /home/tino/Bureau/stage/Video_Analyzer_Tool/src/main.py ./ressources/pu.mp4 Farneback MOG2 StartStop
 
 
 

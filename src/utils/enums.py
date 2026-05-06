@@ -8,7 +8,7 @@ class Algorithm(Enum):
         return self.name
     
 class Mask(Enum):
-    MO2 = "MO2"
+    MOG2 = "MOG2"
     NoMask = "NoMask"
     
     def __str__(self):
