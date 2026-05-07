@@ -2,7 +2,7 @@ import sys
 import cv2 as cv
 import os
 import argparse
-from tracker.analyzerFourier import AnalyzerFourier
+from tracker.analyzer import AnalyzerFourier
 from tracker.analyzerStartStop import AnalyzerStartStop
 from tracker.analyzerRepetingSignal import AnalyzerRepetingSignal
 import algorithm.optical_flow_dense as optical_flow_dense

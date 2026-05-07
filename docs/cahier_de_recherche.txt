@@ -101,8 +101,8 @@ Etude 3 :
 
     Analyse :
 
-        1) La FFT correspond très bien à ce genre de signal puisque les mouvements sont réguliers tout au long.
-        2) La FFT ne correspond pas bien à l'étude de ce genre de signal car elle décompose n'importe quel signal en somme de sinusoïdes, 
+        1) La FFT correspond très bien à ce genre de signal puisque les mouvements sont réguliers tout au long de la vidéo.
+        2) La FFT ne correspond pas à l'étude de ce genre de signal car elle décompose n'importe quel signal en somme de sinusoïdes, 
         même si ce signal n'est pas du tout sinusoïdal. Or ici, le signal est composé de pics séparés de silences — c'est ce qu'on appelle un signal impulsionnel. 
         Or une impulsion courte, quand on la décompose en sinusoïdes, nécessite une infinité de fréquences pour être représentée exactement.
 
@@ -114,7 +114,6 @@ Etude 3 :
 
     Protocole : 
 
-        Utiliser l'autocorrélation pour mesurer à quel point le signal ressemble à lui-même pour chaque décalage de X secondes. 
 
     
 

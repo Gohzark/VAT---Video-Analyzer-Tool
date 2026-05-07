@@ -1,6 +1,6 @@
 import numpy as np
 import cv2 as cv
-from tracker.analyzerFourier import *
+from tracker.analyzer import *
     
 def run_dense(cap, mask, tracker, centering):
     

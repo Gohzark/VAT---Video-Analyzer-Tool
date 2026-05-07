@@ -14,10 +14,10 @@ class Mask(Enum):
     def __str__(self):
         return self.name
     
-class Tracker(Enum):
-    Fourier = "Fourier"
+class Analyze(Enum):
+    FFT = "FFT"
     SS = "StartStop"
-    RS = "RepetingSignal"
+    Sliding = "Sliding"
     
     def __str__(self):
         return self.name
