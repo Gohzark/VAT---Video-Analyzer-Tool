@@ -6,14 +6,14 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from scipy.ndimage import minimum_filter
-from .analyzer import Analyzer
 from utils.flow_data import FlowData
-from utils.enums import Algorithm, Analyze
+from utils.enums import Algorithm, Analyze, Mask
 
 #TODO: Ajouter le lissage du déplacement de la caméra
 
 class Analyzer():
-
+    video_name: str
+    output_dir: str
     image_width: int
     image_height: int
     mean_angles: list
@@ -23,25 +23,29 @@ class Analyzer():
     analyze: Analyze
     threshold: float
     algorithm: Algorithm
-    mask: str
+    mask: Mask
+    centering: bool
 
     def __init__(
         self,
-        video_path: str,
+        video_name: str,
         height: int,
         width: int,
         algorithm: Algorithm,
+        mask: Mask,
         analyze: Analyze,
-        mask: str,
         centering: bool,
         threshold: float = 0.2,
     ):
+        self.video_name = video_name
         self.image_height = height
         self.image_width = width
         self.algorithm = algorithm
+        self.analyze = analyze
         self.mask = mask
-        self.script_dir = os.path.dirname(os.path.abspath(__file__))
-        self.output_dir = os.path.join(self.script_dir, "../../outputs")
+        self.centering = centering
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        self.output_dir = os.path.join(script_dir, "../../outputs")
         os.makedirs(self.output_dir, exist_ok=True)
         self.analyze = analyze
         if (centering and mask is not None):
@@ -54,7 +58,7 @@ class Analyzer():
 
 
     def update(self, flow_data: FlowData) -> None:
-        if self.analyze == Analyze.StartStop:
+        if self.analyze == Analyze.SS:
             self._update_startstop(flow_data)
         else:
             self._update_flow(flow_data)
@@ -133,7 +137,7 @@ class Analyzer():
                 self._detectFFT(fps)
             case Analyze.Sliding:
                 self._detectBySliding(fps)
-            case Analyze.StartStop:
+            case Analyze.SS:
                 self._detectStartStop(fps)
 
     def _detectStartStop(self, fps: float) -> None:
@@ -147,43 +151,42 @@ class Analyzer():
         )
         clean_window = minimum_filter(norms, size=5, mode='nearest')
         vecteur_bool = clean_window > 0
-        changes      = np.diff(vecteur_bool.astype(int))
 
-        indices_start = np.argwhere(changes == 1)
-        indices_end   = np.argwhere(changes == -1)
+        starts = np.where((vecteur_bool[:-1] == False) & (vecteur_bool[1:] == True))[0] + 1
+        ends   = np.where((vecteur_bool[:-1] == True) & (vecteur_bool[1:] == False))[0] + 1
 
-        if len(indices_start) == 0 and len(indices_end) == 0:
-            if vecteur_bool.any():
-                start_serie, end_serie, nb_movement = 0, len(vecteur_bool) - 1, 1
-            else:
-                print("[GoodAnalyzer] Aucun mouvement détecté dans la séquence.")
-                return
-        else:
-            start_serie = 0 if len(indices_start) == 0 else indices_start[0].item()
-            end_serie   = len(vecteur_bool) - 1 if len(indices_end) == 0 else indices_end[-1].item()
-            nb_movement = len(indices_start) + (1 if vecteur_bool[0] else 0)
+        # Cas particulier : commence en mouvement
+        if vecteur_bool[0]:
+            starts = np.insert(starts, 0, 0)
+        # Cas particulier : finit en mouvement
+        if vecteur_bool[-1]:
+            ends = np.append(ends, len(vecteur_bool) - 1)
 
-        if end_serie <= start_serie:
-            print(f"[GoodAnalyzer] Durée de série invalide : start={start_serie}, end={end_serie}.")
+        nb_reps = len(starts)
+        if nb_reps < 1:
+            print("[GoodAnalyzer] Aucun mouvement distinct trouvé.")
             return
 
-        frame_count = end_serie - start_serie
-        t_start     = start_serie / fps
-        t_end       = end_serie   / fps
-        duration    = t_end - t_start
-
-        if duration <= 0:
-            print("[GoodAnalyzer] Durée nulle, rythme incalculable.")
-            return
-
-        rythm = round(nb_movement / duration, 2)
-        period = round(1/rythm, 2)
+        # Durée totale entre le tout premier mouvement et la fin du dernier
+        t_total = (ends[-1] - starts[0]) / fps
         
+        if nb_reps > 1:
+            # La période est le temps entre les débuts de mouvements successifs
+            # C'est beaucoup plus précis pour un rythme
+            avg_period_frames = np.mean(np.diff(starts))
+            period = avg_period_frames / fps
+            frequency = 1 / period
+        else:
+            # Un seul mouvement : la période est sa durée propre
+            period = t_total
+            frequency = 1 / t_total if t_total > 0 else 0
+
         self._writeResults({
-                "periode_sec": period,
-                "frequence_hz": rythm,
-                "nb_mouvements_estimes": round(len(self.mean_magnitudes) / fps / period, 2),
-            })
+            "periode_sec": round(period, 2),
+            "frequence_hz": round(frequency, 2),
+            "nb_cycles_mouvement": nb_reps,
+            "duree_active_sec": round(t_total, 2)
+        })
         
     def _detectFFT(self, fps: float) -> None:
         array = np.array(self.mean_magnitudes)
@@ -203,6 +206,25 @@ class Analyzer():
         freqs_pos  = freqs[:N // 2]
         amplitudes = np.abs(fft_result[:N // 2]) * 2 / N
 
+        self._plotFFT(freqs_pos, amplitudes)
+
+        mask          = freqs_pos >= 0.1
+        idx_pic       = np.argmax(amplitudes[mask])
+        frequence_dom = round(float(freqs_pos[mask][idx_pic]), 2)
+        amp_pic       = amplitudes[mask][idx_pic]
+        ratio         = round(amp_pic / np.mean(amplitudes[mask]), 2)
+
+        self._plotEvolution(self.mean_magnitudes, self.mean_angles, fps)
+        self._writeResults({
+            "periode_sec": round(1 / frequence_dom, 2),
+            "frequence_hz": frequence_dom,
+            "ratio" : ratio,
+            "nb_cycles_mouvement": round(len(self.mean_magnitudes) / fps * frequence_dom, 2),
+            "plot_fft": os.path.join(self._plot_dir()+"/plot_fft.png"),
+            "plot_evolution": os.path.join(self._plot_dir()+"/plot_evolution.png"),
+        })
+        
+    def _plotFFT(self, freqs_pos: np.ndarray, amplitudes: np.ndarray) -> None:
         fig, ax = plt.subplots(figsize=(10, 4))
         ax.plot(freqs_pos, amplitudes, color='steelblue')
         ax.set_xlabel("Fréquence (Hz)")
@@ -210,25 +232,10 @@ class Analyzer():
         ax.set_title("Spectre FFT")
         ax.grid(True, alpha=0.3)
         plt.tight_layout()
-        plt.savefig(os.path.join(self.output_dir, f"fft_{self.prefixe_file}.png"), dpi=150)
+        plt.savefig(self._plot_dir()+"/plot_fft.png", dpi=150)
         plt.close()
-
-        mask          = freqs_pos >= 0.1
-        idx_pic       = np.argmax(amplitudes[mask])
-        frequence_dom = round(float(freqs_pos[mask][idx_pic]), 2)
-        amp_pic       = amplitudes[mask][idx_pic]
-        ratio         = amp_pic / np.mean(amplitudes[mask])
-
-        self._plotEvolution(self.mean_magnitudes, self.mean_angles, fps)
-        self._writeResults({
-            "periode_sec": round(1 / frequence_dom, 2),
-            "frequence_hz": frequence_dom,
-            "ratio" : ratio,
-            "nb_mouvements_estimes": round(len(self.mean_magnitudes) / fps * frequence_dom, 2),
-            "plot_fft": os.path.join(self.output_dir, f"fft_{self.prefixe_file}.png"),
-            "plot_evolution": os.path.join(self.output_dir, f"mouvement_{self.prefixe_file}.png"),
-        })
-        
+    
+    
     #TODO: essayer de minimiser la période également
     def _detectBySliding(self, fps: float) -> None:
         array            = np.array(self.mean_magnitudes)
@@ -262,7 +269,7 @@ class Analyzer():
             self._writeResults({
                 "periode_sec": round(periode, 2),
                 "frequence_hz": round(1 / periode, 2),
-                "nb_mouvements_estimes": round(len(self.mean_magnitudes) / fps / periode, 2),
+                "nb_cycles_mouvement": round(len(self.mean_magnitudes) / fps / periode, 2),
             })
 
     def _costByGap(self, signal: np.ndarray, gap: int) -> float:
@@ -280,7 +287,7 @@ class Analyzer():
                 results = json.load(f)
 
         node = results
-        for key in [self.video_name, self.algorithm.value, self.analyze.value, self.mask]:
+        for key in [self.video_name, self.algorithm.value, self.analyze.value, self.mask.value]:
             node = node.setdefault(key, {})
 
         node["centering"] = self.centering
@@ -290,9 +297,8 @@ class Analyzer():
             json.dump(results, f, indent=4, ensure_ascii=False)
 
     def _plotEvolution(self, magnitudes: list, angles: list, fps: float) -> None:
-        file_path = os.path.join(self.output_dir, f"mouvement_{self.prefixe_file}.png")
+        
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 6))
-
         t_mag = np.linspace(0, len(magnitudes) / fps, len(magnitudes))
         ax1.plot(t_mag, magnitudes, color='blue', label='Magnitude du mouvement')
         ax1.set_title("Évolution du mouvement")
@@ -306,7 +312,7 @@ class Analyzer():
         ax2.legend()
 
         plt.tight_layout()
-        plt.savefig(file_path)
+        plt.savefig(self._plot_dir()+"/plot_evolution.png")
         plt.close()
 
     def _plot_dir(self) -> str:
@@ -315,7 +321,7 @@ class Analyzer():
             self.video_name,
             self.algorithm.value,
             self.analyze.value,
-            self.mask if self.mask else "no_mask",
+            self.mask.value if self.mask else "no_mask",
             "centering" if self.centering else "no_centering",
         )
         os.makedirs(path, exist_ok=True)

@@ -3,7 +3,7 @@ __pycache__/
 *.py[cod]
 
 outputs/
-ressources/
+resources/
 
 # IDE et OS
 .vscode/

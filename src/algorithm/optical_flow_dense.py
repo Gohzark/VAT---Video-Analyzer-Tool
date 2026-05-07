@@ -12,7 +12,6 @@ def run_dense(cap, mask, tracker, centering):
     previous_image = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
     hsv = np.zeros_like(frame)
     hsv[..., 1] = 255
-    hauteur, largeur, _ = frame.shape
     fps = cap.get(cv.CAP_PROP_FPS)
 
     # Variables pour le lissage

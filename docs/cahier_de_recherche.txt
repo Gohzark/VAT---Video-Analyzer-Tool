@@ -17,23 +17,25 @@ Etude 1:
         L'analyse de la vidéo a guidé mon choix de méthode car il s'agissait d'une vidéo d'un individu effectuant des tractions au poids du corps en suivant un rythme régulier, et marquant un temps d'arrêt en bas et en haut du mouvement.
         Je suis donc parti de la supposition qu'en parvenant à détecter chaque début et chaque fin de mouvement, je pourrais compter le nombre de répétitions effectué et extraire un rythme.
 
-        J'ai alors créer un analyseur dont le rôle était de traiter ce signal que j'ai nommé "analyzerStartStop.py"
+        J'ai alors créer un analyseur "analyzer.py" dont le rôle est de traiter ce signal, dans une méthode "_detectStartStop.py"
         À chaque frame, celui-ci calcule le centre de masse des pixels en mouvement (c'est à dire ceux dont le flux optique dépasse un certain seuil) et le stocke dans une liste. Si aucun mouvement n'est détecté, il répète la dernière position connue.
         Ensuite, il calcule les déplacements frame par frame (différences successives des positions), puis applique un filtre minimum dans une fenêtre glissante pour lisser le signal et éliminer le bruit.
         En effet, la détection de flux optique est bruitée par nature — un pixel isolé peut bouger d'une frame à l'autre sans que ce soit un vrai mouvement. Le filtre minimum et la fenêtre glissante agissent comme un gate : seuls les mouvements qui durent au moins quelques frames consécutives passent le seuil, ce qui rend le comptage des mouvements beaucoup plus fiable.
         Puis, ce signal lissé est converti en vecteur booléen (mouvement / pas de mouvement), ce qui permet de compter le nombre de séquences de mouvement distinctes et d'en identifier les bornes temporelles (début, fin, durée).
         Enfin, l'analyseur calcule un rythme (fréquence des mouvements sur la durée de la série) et enregistre toutes ces métriques. 
 
+
     Test :
         
-        Video de traction (pu.mp4) : caméra fixe, mouvements distincts.
+        Sujet : Video de traction (traction.mp4) : caméra fixe, mouvements séparés par des pauses.
+        Technologies :
+            Capture du signal : Shi-Tomasi + Lucas-Kanade
+            Masque : 
+            Analyse : StartStop
 
     Résultats : 
 
-        Tous les résultats du projet sont localisés dans le répertoire "src/outputs", sous la forme "<type_resultat>_<nom_video>_<algo_utilise>_<masque_applique>_<analyseur_utilise>".
-        Par exemple, les résultats de ce test sont dans le fichier "src/outputs/data_pu_LK_NoMask_trackerSS.txt".
-
-        D'après les résultats fournis par l'analyseur, 10 mouvements sont détectés.
+        D'après les résultats fournis par l'analyseur, 11 mouvements sont détectés.
         Cependant, après avoir observé la vidéo, il n'y a pourtant que 3 mouvements de tractions soit 6 mouvements (montée et descente) que l'algorithme aurait du détecter.
 
     Analyse : 
@@ -59,26 +61,34 @@ Etude 2 :
 
     Test :
         
-        Video de traction (pu.mp4) : caméra fixe, mouvements distincts.
+        Sujet : traction.mp4
+        Technologies :
+            Capture du signal : Farneback
+            Masque : MOG2
+            Analyse : StartStop
 
     Résultats : 
 
         Avec ce signal de meilleure qualité, l'analyseur parvient bel et bien à détecter 6 mouvements conformément à ce qui est attendu.
+        Cependant, il retourne une période de 2.65 sec ce qui ne correspond pas à la réalité observée.
+        Cela a du sens étant donné que le mouvement dans la vidéo n'est pas régulier, il calcule une période moyenne qui n'a pas de sens puisque l'intervalle entre les mouvements de montée plus descente est bref 
+        alors qu'entre une descente et une montée, il est plus long. Une période qui aurait du sens serait la période entre 2 cycles complets de tractions, donc entre 2 montées ou entre 2 descentes.
 
     Analyse : 
 
-        Farneback fournit un champ de vecteurs dense donc tous les pixels dont la magnitude dépasse un seuil contribuent au calcul de la moyenne, ce qui le stabilise considérablement.
+        Farneback fournit un champ de vecteurs dense donc tous les pixels dont la magnitude dépasse un seuil contribuent au calcul de la moyenne, 
+        ce qui stabilise le signal considérablement par rapport à une détection des points avec Shi-Tomasi.
 
 Etude 3 :
 
     Objectif : 
 
         Définir une autre manière de détecter les mouvements pour adapter l'analyseur à tout type de vidéo (comme de la course à pied) dans laquelle le mouvement est continu 
-        et donc pour lequel on peut pas utiliser la méthode vu précédemment, car il n'y a pas de début ni de fin de mouvement.
+        et donc pour lequel on peut pas utiliser la méthode StartStop car il n'y a pas de pause entre les mouvementse.
 
     Protocole :
 
-        Au lieu de détecter les débuts et fins de mouvements, j'ai orienté mon approche sur l'étude de l'évolution de la magnitude globale du sujet.
+        J'ai orienté mon approche sur l'étude de l'évolution de la magnitude globale du sujet.
     
         A chaque passage à une nouvelle frame, à l'aide de Farneback, on enregistre la moyenne normalisée des magnitudes et l'angle du déplacement des points préalablement conservés par le masque MOG2.
         A la fin de la vidéo, l'analyseur récupère l'ensemble des moyennes des magnitudes et effectue une transformation de Fourier rapide à partir de ces données.
@@ -88,23 +98,30 @@ Etude 3 :
 
     Test : 
 
-        1) Vidéo de course sur tapis (course_tapis.mp4) : caméra fixe, mouvement continu.
-        2) pu.mp4
+        Sujets : 
+            1 - Vidéo de course sur tapis (course_tapis.mp4) : caméra fixe, mouvement continu.
+            2 - pu.mp4
+
+        Technologies :
+            Capture du signal : Farneback
+            Masque : MOG2
+            Analyse : FFT
 
     Résultats :
 
-        1) D'après l'étude visuelle de la vidéo, le coureur effectue un total de 30 cycles (jambe gauche , jambe droite) soit 60 appuis durant la vidéo.
+        1 - D'après l'étude visuelle de la vidéo, le coureur effectue un total de 30 cycles (jambe gauche , jambe droite) soit 60 appuis durant la vidéo.
         La fréquence dominante déterminée par l'analyseur est 2.96 Hz c'est-à-dire un rythme de 177.6 mouvements par minutes soit ~59 mouvements sur les 20 secondes de course de la vidéo.
         Donc l'analyseur à fourni un bon résultat sur cette vidéo.
 
-        2) L'analyseur détecte un pic dominant à 0.51 soit 7 mouvements sur les 14 secondes de tractions de la vidéo, alors que le résultat attendu était de 6.
+        2 - L'analyseur détecte un pic dominant à 0.51 soit 7 mouvements sur les 14 secondes de tractions de la vidéo, alors que le résultat attendu était de 6.
 
     Analyse :
 
-        1) La FFT correspond très bien à ce genre de signal puisque les mouvements sont réguliers tout au long de la vidéo.
-        2) La FFT ne correspond pas à l'étude de ce genre de signal car elle décompose n'importe quel signal en somme de sinusoïdes, 
+        1 - La FFT correspond très bien à ce genre de signal puisque les mouvements sont réguliers tout au long de la vidéo.
+        2 - La FFT ne correspond pas à l'étude de ce genre de signal car elle décompose n'importe quel signal en somme de sinusoïdes, 
         même si ce signal n'est pas du tout sinusoïdal. Or ici, le signal est composé de pics séparés de silences — c'est ce qu'on appelle un signal impulsionnel. 
         Or une impulsion courte, quand on la décompose en sinusoïdes, nécessite une infinité de fréquences pour être représentée exactement.
+
 
 Étude 4 :
 
@@ -114,8 +131,29 @@ Etude 3 :
 
     Protocole : 
 
+        Comme vu dans l'étude 2, bien que nous ayons pu récupérer le nombre de mouvements effectués, StartStop n'a pas permit de récupérer une fréquence d'exécution à partir de traction.mp4.
+        Dans l'étude 3, nous avons vu que la FFT ne permettait pas de bien analyser un signal impulsionnel comme dans traction.mp4.
 
-    
+        Ainsi, pour extraire une fréquence/période ayant du sens depuis cette vidéo, mon approche a été de comparer le signal récupéré avec Farneback avec lui-même décalé de X secondes et
+        d'augmenter X jusqu'à trouver la meilleure valeur de X qui minimise l'erreur quadratique moyenne entre les 2 signaux. Le X sera le nombre de frames entre 2 mouvements identiques soit 
+        la période une fois convertit en secondes.
+        Ce traitement est défini dans la méthode "_detectBySliding" de l'analyseur.
+
+    Test : 
+
+        Sujet : traction.mp4
+        Technologies :
+            Capture du signal : Farneback
+            Masque : MOG2
+            Analyse : Sliding
+
+    Résultats :
+
+        L'analyseur détecte une période de 5.9 sec soit 3.03 cycles complets de mouvements ce qui correspond bien aux données de la vidéo.
+
+    Analyse : 
+
+        Cette méthode permet bien de traiter un signal impulsionnel, il faudra par la suite voir si elle est capable de traiter également d'autres types de vidéos/signaux.
 
 
 

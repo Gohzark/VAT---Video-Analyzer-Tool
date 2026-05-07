@@ -2,13 +2,10 @@ import sys
 import cv2 as cv
 import os
 import argparse
-from tracker.analyzer import AnalyzerFourier
-from tracker.analyzerStartStop import AnalyzerStartStop
-from tracker.analyzerRepetingSignal import AnalyzerRepetingSignal
+from tracker.analyzer import Analyzer
 import algorithm.optical_flow_dense as optical_flow_dense
 import algorithm.optical_flow_sparse as optical_flow_sparse
-
-from utils.enums import Algorithm, Mask, Tracker
+from utils.enums import Algorithm, Mask, Analyze
 
 def openVideo(video_path):
     if not os.path.exists(video_path):
@@ -21,11 +18,6 @@ def openVideo(video_path):
         sys.exit(1)
     
     return cap
-
-def getVideoName(video_path):
-    video_filename = os.path.basename(video_path)
-    video_name = os.path.splitext(video_filename)[0]
-    return video_name
 
 def createMask(cap, mask_type):
     mask = None
@@ -48,33 +40,30 @@ def createMask(cap, mask_type):
             print("Aucun masque de mouvement sélectionné, le flux optique sera calculé sur toute l'image.")
     return mask
 
-def initTracker(tracker_type, video_name, height, width, algorithm, mask, centering):
-    match tracker_type:
-        case Tracker.Fourier:
-            print("Tracker Fourier sélectionné")
-            return AnalyzerFourier(video_name, height, width, algorithm, mask, centering)
-        case Tracker.SS:
-            print("Tracker StartStop sélectionné")
-            return AnalyzerStartStop(video_name, height, width, algorithm, mask, centering)
-        case Tracker.RS:
-            print("Tracker RepetingSignal sélectionné")
-            return AnalyzerRepetingSignal(video_name, height, width, algorithm, mask, centering)
+def initAnalyse(analyze, video_name, height, width, algorithm, mask, centering):
+    match analyze:
+        case Analyze.FFT:
+            print("Analyse par FFT sélectionnée")
+        case Analyze.SS:
+            print("Analyse StartStop sélectionnée")
+        case Analyze.Sliding:
+            print("Analyse par décalage du signal sélectionnée")
+    return Analyzer(video_name, height, width, algorithm, mask, analyze, centering)
         
 def useAlgorithm(cap, algorithm, mask, tracker, centering):
     match algorithm:
         case Algorithm.LK:
             print("Algorithme Lucas-Kanade (sparse) sélectionné")
-            optical_flow_sparse.run_sparse(cap, mask, tracker, centering)
+            optical_flow_sparse.run_sparse(cap, mask, tracker)
         case Algorithm.Farneback:
             print("Algorithme Farneback (dense) sélectionné")
             optical_flow_dense.run_dense(cap, mask, tracker, centering)
             
 def main(args):
-    cap = openVideo(args.video)
-    video_name = getVideoName(args.video)
+    cap = openVideo("resources/" + args.video)
     mask = createMask(cap, args.mask)
-    tracker = initTracker(args.tracker, video_name, cap.get(cv.CAP_PROP_FRAME_HEIGHT), cap.get(cv.CAP_PROP_FRAME_WIDTH), args.algorithm, args.mask.value, args.centering)
-    useAlgorithm(cap, args.algorithm, mask, tracker, args.centering)
+    analyse = initAnalyse(args.analyse, args.video, cap.get(cv.CAP_PROP_FRAME_HEIGHT), cap.get(cv.CAP_PROP_FRAME_WIDTH), args.algorithm, args.mask, args.centering)
+    useAlgorithm(cap, args.algorithm, mask, analyse, args.centering)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Video Analyzer Tool')
@@ -90,9 +79,9 @@ if __name__ == "__main__":
         choices=list(Mask)
     )
     parser.add_argument(
-        'tracker',
-        type=Tracker,
-        choices=list(Tracker)
+        'analyse',
+        type=Analyze,
+        choices=list(Analyze)
     )
     parser.add_argument(
         '--centering',
@@ -102,7 +91,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     main(args)
     
-#exemple : /usr/bin/python3 /home/tino/Bureau/stage/Video_Analyzer_Tool/src/main.py ./ressources/pu.mp4 Farneback MOG2 StartStop
+#exemple : /usr/bin/python3 /home/tino/Bureau/stage/Video_Analyzer_Tool/src/main.py ./resources/pu.mp4 Farneback MOG2 StartStop
 
 
 

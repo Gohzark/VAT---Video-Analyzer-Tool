@@ -1,6 +1,6 @@
 import cv2 as cv
 import numpy as np
-from tracker.analyzerStartStop import *
+from tracker.analyzer import *
 
 def get_fg_mask(frame, mask_option):
         if mask_option is not None:  
