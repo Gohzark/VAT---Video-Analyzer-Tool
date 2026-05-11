@@ -1,3 +1,5 @@
+Cahier de recherche - Computer Vision - DOLBEAU Tino M1
+
 Etude 1:
 
     Objectif : 
@@ -9,20 +11,25 @@ Etude 1:
 
         La première étape était de récupérer du signal depuis une vidéo.
 
-        Dans un premier temps, j'ai déterminer des points à traquer sur l'image avec l'algorithme Shi-Tomasi (1994), grâce à la fonction goodFeaturesToTrack() d'OpenCV. C'est un algorithme de détections de coins qui se base sur la détection d'un fort gradient (une forte variation d'intensité lumineuse) dans toutes les directions (horizontale et verticale) pour considérer que c'est un coin.
-        Ensuite, pour traquer ces points entre les images, j'ai utiliser Lucas-Kanade, un algorithme sparse, avec la méthode pyramidale (1981) grâce à la fonction Ensuite, pour traquer ces points sur l'image suivante, j'ai utilisé Lucas-Kanade (1981) dans sa version pyramidale (Bouguet, 2000) grâce à la fonction calcOpticalFlowPyrLK() de OpenCV. C'est un algorithme sparse donc qui suit seulement certains points déterminés sur l'image, ce qui lui confère l'avantage d'être rapide à exécuter.
+        Dans un premier temps, j'ai déterminer des points à traquer sur l'image avec l'algorithme Shi-Tomasi (1994), grâce à la fonction "goodFeaturesToTrack()" d'OpenCV. C'est un algorithme de détections de coins qui se base sur la détection d'un fort gradient (une forte variation d'intensité lumineuse) dans toutes les directions (horizontale et verticale) pour considérer que c'est un coin.
+        Ensuite, pour traquer ces points entre les images, j'ai utiliser Lucas-Kanade de 1981, un algorithme sparse, dans sa version pyramidale de 2000, grâce à la fonction "calcOpticalFlowPyrLK()" d'OpenCV. 
+        C'est un algorithme sparse, donc qui suit seulement certains points déterminés sur l'image, ce qui lui confère l'avantage d'être rapide à exécuter.
         Ainsi, on récupère le flux optique entre chaque paire d'images. C'est-à-dire un ensemble de vecteurs de déplacement de chaque point traqué par Lucas-Kanade entre les 2 images.
+        Cette capture du signal est faite dans "optical_flow_sparse.py".
         
-        Dans un second temps, après avoir récupéré ce signal, il a fallu l'étudier pour en extraire un rythme.
-        L'analyse de la vidéo a guidé mon choix de méthode car il s'agissait d'une vidéo d'un individu effectuant des tractions au poids du corps en suivant un rythme régulier, et marquant un temps d'arrêt en bas et en haut du mouvement.
-        Je suis donc parti de la supposition qu'en parvenant à détecter chaque début et chaque fin de mouvement, je pourrais compter le nombre de répétitions effectué et extraire un rythme.
-
-        J'ai alors créer un analyseur "analyzer.py" dont le rôle est de traiter ce signal, dans une méthode "_detectStartStop.py"
-        À chaque frame, celui-ci calcule le centre de masse des pixels en mouvement (c'est à dire ceux dont le flux optique dépasse un certain seuil) et le stocke dans une liste. Si aucun mouvement n'est détecté, il répète la dernière position connue.
-        Ensuite, il calcule les déplacements frame par frame (différences successives des positions), puis applique un filtre minimum dans une fenêtre glissante pour lisser le signal et éliminer le bruit.
-        En effet, la détection de flux optique est bruitée par nature — un pixel isolé peut bouger d'une frame à l'autre sans que ce soit un vrai mouvement. Le filtre minimum et la fenêtre glissante agissent comme un gate : seuls les mouvements qui durent au moins quelques frames consécutives passent le seuil, ce qui rend le comptage des mouvements beaucoup plus fiable.
-        Puis, ce signal lissé est converti en vecteur booléen (mouvement / pas de mouvement), ce qui permet de compter le nombre de séquences de mouvement distinctes et d'en identifier les bornes temporelles (début, fin, durée).
-        Enfin, l'analyseur calcule un rythme (fréquence des mouvements sur la durée de la série) et enregistre toutes ces métriques. 
+        Dans un second temps, après avoir récupéré ce flux optique, il a fallu l'étudier pour en extraire un rythme. 
+        L'observation de la vidéo a guidé mon choix de méthode : l'individu effectuait des tractions avec un temps d'arrêt marqué 
+        en haut et en bas du mouvement, ce comportement générant un signal discontinu, composé de pics d'activité séparés par 
+        des phases de silence. J'ai donc conçu un analyseur "analyzer.py" dont le rôle est de convertir ce flux vectoriel complexe 
+        en un signal scalaire unidimensionnel, traité par la méthode "_detectStartStop()" : à chaque frame, il calcule le barycentre 
+        des points en mouvement (ceux dont la magnitude du flux dépasse un certain seuil) permettant de passer d'un nuage de vecteurs 
+        à une seule coordonnée (x, y) représentant la position moyenne de l'effort, et répétant la dernière position connue lors 
+        des phases d'arrêt pour garantir la continuité du signal. Une fois la séquence terminée, la norme des déplacements successifs 
+        est calculée puis filtrée par un filtre de minimum sur fenêtre glissante qui, contrairement à une moyenne classique, 
+        agit comme un seuil temporel éliminant les artefacts brefs et ne laissant passer que les mouvements ayant une cohérence 
+        temporelle sur plusieurs frames consécutives. Ce signal nettoyé est ensuite converti en un vecteur booléen mouvement/repos, 
+        dont les fronts montants et descendants permettent d'identifier précisément le début et la fin de chaque répétition.
+        La fréquence est alors calculée par une analyse cycle à cycle mesurant l'intervalle temporel moyen entre chaque début de mouvement.
 
 
     Test :
@@ -30,7 +37,7 @@ Etude 1:
         Sujet : Video de traction (traction.mp4) : caméra fixe, mouvements séparés par des pauses.
         Technologies :
             Capture du signal : Shi-Tomasi + Lucas-Kanade
-            Masque : 
+            Masque : Aucun
             Analyse : StartStop
 
     Résultats : 
@@ -41,10 +48,11 @@ Etude 1:
     Analyse : 
 
         L'inexactitude des résultats s'explique par la nature des features employées.
-        En premier lieu, la plupart des features sont placées sur des objets du décor car ils présentent des coins de meilleure qualité que le corps humain. On peut supposer que sur d'autres vidéos, il pourrait n'y avoir aucun point placé sur le sujet d'étude, ce qui rendrait le tracking totalement inexploitable.
-        Par ailleurs, en observant l'interface graphique — qui affiche les trajectoires des points trackés (lignes colorées) et leurs positions courantes (points colorés) — on remarque que les points glissent d'une partie du corps à une autre, voire se fixent sur le fond. Ce comportement s'explique par le fait que Shi-Tomasi s'accroche aux coins et contours nets de l'image, or sur un corps humain en mouvement ces features sont instables. 
+        En premier lieu, la plupart des features sont placées sur des objets du décor car ils présentent des coins de meilleure qualité que le corps humain. On peut supposer que sur d'autres vidéos, il pourrait même n'y avoir aucun point placé sur le sujet d'étude, ce qui rendrait le tracking totalement inexploitable.
+        Par ailleurs, en observant l'interface graphique, qui affiche les trajectoires des points trackés (lignes colorées) et leurs positions courantes (points colorés), on remarque que les points glissent d'une partie du corps à une autre, voire se fixent sur le fond lors des mouvements. 
+        Ce comportement s'explique par le fait que Shi-Tomasi s'accroche aux coins et contours nets de l'image, or, sur un corps humain en mouvement ces features, sont instables. 
         L'analyseur interprète alors ces réajustements comme des débuts et fins de mouvements distincts, alors qu'il s'agit du même mouvement continu mal suivi, ce qui introduit un biais dans le comptage.
-        Enfin, lors de la fin de la descente du mouvement, on observe un léger balancement des pieds qui peut être comptabilisé comme un mouvement à part entière et altérer les résultats.
+        Enfin, lors de la fin de la descente du mouvement, on observe un léger balancement des pieds qui peut être comptabilisé comme un mouvement à part entière et fausser les résultats.
 
 Etude 2 :
 
@@ -54,10 +62,15 @@ Etude 2 :
 
     Protocole :
 
-        Plutôt que de chercher une autre façon de déterminer des features à suivre pour utiliser Lucas-Kanade, je me suis orienté vers l'algorithme Farneback (2003) grâce à la fonction calcOpticalFlowFarneback d'OpenCV.
-        Il s'agit d'un algorithme dense, ce qui permet de s'affranchir de l'étape de détection des features en analysant le mouvement de l'image entière, ce qui est plus robuste que Shi-Tomasi + Lucas-Kanade quand le sujet est un corps humain dont les contours nets sont difficiles à traquer précisément mais plus lent car il requiert beaucoup plus de calculs.
-
-        De plus, pour suprimmer le bruit causé par les micro variations de luminosité de la vidéo, j'ai appliqué un masque de suppression d'arrière-plan via la fonction "createBackgroundSubtractorMOG2" d'OpenCV, basée sur l'algorithme MOG2 (Mixture of Gaussians).
+        Plutôt que de chercher une autre façon de déterminer des features à suivre pour utiliser Lucas-Kanade, je me suis orienté vers l'algorithme Farneback (2003) grâce à la fonction "calcOpticalFlowFarneback()" d'OpenCV.
+        Il s'agit d'un algorithme dense, ce qui permet de s'affranchir de l'étape de détection des features en analysant le mouvement de l'image entière, ce qui est plus robuste 
+        que Shi-Tomasi + Lucas-Kanade quand le sujet est un corps humain dont les contours sont difficiles à traquer précisément mais il plus lent car il requiert beaucoup plus de calculs.
+        Dans un premier temps, pour suprimmer le bruit causé par les micro variations de luminosité et les légers mouvements parasites qui pourraient apparaître dans la vidéo, 
+        j'ai appliqué un masque de suppression d'arrière-plan via la fonction "createBackgroundSubtractorMOG2()" d'OpenCV, basée sur l'algorithme MOG2 (Mixture of Gaussians).
+        Ensuite, à chaque nouvelle frame, Farneback nous renvoie la magnitude et les angles de déplacement de tous les points par rapport à l'image précédente.
+        On commence par filtrer pour ne traquer que les points dont la magnitude dépasse un certain seuil pour avoir les points actuels.
+        Puis, grâce aux magnitudes et aux angles on calcule l'ancienne position de ces points.
+        Ce qui nous permet d'utiliser notre analyse StartStop sur ces données.
 
     Test :
         
@@ -89,18 +102,17 @@ Etude 3 :
     Protocole :
 
         J'ai orienté mon approche sur l'étude de l'évolution de la magnitude globale du sujet.
-    
-        A chaque passage à une nouvelle frame, à l'aide de Farneback, on enregistre la moyenne normalisée des magnitudes et l'angle du déplacement des points préalablement conservés par le masque MOG2.
+        A chaque passage à une nouvelle frame, à l'aide de Farneback, on enregistre la moyenne normalisée des magnitudes et 
+        l'angle du déplacement de tous les points préalablement conservés par le masque MOG2.
         A la fin de la vidéo, l'analyseur récupère l'ensemble des moyennes des magnitudes et effectue une transformation de Fourier rapide à partir de ces données.
         Ensuite, on récupère le pic de fréquence de la FFT (Fast Fourier Transformation) dont l'amplitude est la plus importante, hormis celui à la fréquence 0.
         Puis, on calcule le ratio de ce pic sur l'amplitude moyenne des fréquences, plus le ratio est important, plus on peut se fier à l'analyse du signal.
         On a ainsi la fréquence de mouvement dominante de la vidéo ce qui permet d'en déduire un rythme de mouvement.
+        Ce traitement est fait dans la méthode "_detectFFT()" de l'analyseur.
 
     Test : 
 
-        Sujets : 
-            1 - Vidéo de course sur tapis (course_tapis.mp4) : caméra fixe, mouvement continu.
-            2 - pu.mp4
+        Sujet: pu.mp4 
 
         Technologies :
             Capture du signal : Farneback
@@ -109,19 +121,41 @@ Etude 3 :
 
     Résultats :
 
-        1 - D'après l'étude visuelle de la vidéo, le coureur effectue un total de 30 cycles (jambe gauche , jambe droite) soit 60 appuis durant la vidéo.
-        La fréquence dominante déterminée par l'analyseur est 2.96 Hz c'est-à-dire un rythme de 177.6 mouvements par minutes soit ~59 mouvements sur les 20 secondes de course de la vidéo.
-        Donc l'analyseur à fourni un bon résultat sur cette vidéo.
-
-        2 - L'analyseur détecte un pic dominant à 0.51 soit 7 mouvements sur les 14 secondes de tractions de la vidéo, alors que le résultat attendu était de 6.
+        "periode_sec": 1.96,
+        "frequence_hz": 0.51,
+        "ratio": 14.44,
+        "nb_cycles_mouvement": 9.11,
 
     Analyse :
 
-        1 - La FFT correspond très bien à ce genre de signal puisque les mouvements sont réguliers tout au long de la vidéo.
-        2 - La FFT ne correspond pas à l'étude de ce genre de signal car elle décompose n'importe quel signal en somme de sinusoïdes, 
-        même si ce signal n'est pas du tout sinusoïdal. Or ici, le signal est composé de pics séparés de silences — c'est ce qu'on appelle un signal impulsionnel. 
-        Or une impulsion courte, quand on la décompose en sinusoïdes, nécessite une infinité de fréquences pour être représentée exactement.
+        La FFT ne correspond pas à l'étude de ce genre de signal car elle suppose un signal stationnaire avec une périodicité unique et constante.
+        Or notre signal possède une structure hiérarchique à deux niveaux temporels distincts : l'espacement des impulsions à l'intérieur d'un motif et l'espacement entre les motifs. 
+        Face à cette ambiguïté, la FFT ne peut pas identifier une période fondamentale unique, elle "voit" simultanément ces deux échelles temporelles 
+        et produit un spectre sans pic dominant clair. 
 
+    Test : 
+
+        Sujet: Vidéo de course sur tapis (course_tapis.mp4) : caméra fixe, mouvement continu.
+
+        Technologies :
+            Capture du signal : Farneback
+            Masque : MOG2
+            Analyse : FFT
+
+    Résultats :
+
+        "periode_sec": 0.34,
+        "frequence_hz": 2.97,
+        "ratio": 8.31,
+        "nb_cycles_mouvement": 59.26,
+
+
+    Analyse :
+
+        La FFT correspond très bien à ce genre de signal puisque les mouvements sont réguliers tout au long de la vidéo.
+        D'après l'étude visuelle de la vidéo, le coureur effectue un total de 30 cycles (jambe gauche , jambe droite) soit 60 appuis durant la vidéo.
+        La fréquence dominante déterminée par l'analyseur est 2.96 Hz soit 59 appuis sur les 20 secondes de course de la vidéo.
+        Donc l'analyseur à fourni un bon résultat sur cette vidéo.
 
 Étude 4 :
 
@@ -134,28 +168,52 @@ Etude 3 :
         Comme vu dans l'étude 2, bien que nous ayons pu récupérer le nombre de mouvements effectués, StartStop n'a pas permit de récupérer une fréquence d'exécution à partir de traction.mp4.
         Dans l'étude 3, nous avons vu que la FFT ne permettait pas de bien analyser un signal impulsionnel comme dans traction.mp4.
 
-        Ainsi, pour extraire une fréquence/période ayant du sens depuis cette vidéo, mon approche a été de comparer le signal récupéré avec Farneback avec lui-même décalé de X secondes et
-        d'augmenter X jusqu'à trouver la meilleure valeur de X qui minimise l'erreur quadratique moyenne entre les 2 signaux. Le X sera le nombre de frames entre 2 mouvements identiques soit 
-        la période une fois convertit en secondes.
-        Ce traitement est défini dans la méthode "_detectBySliding" de l'analyseur.
+        Nouvelle approche : comparer l'évolution des magnitudes moyennes récupérée avec Farneback à elle-même décalée de X secondes et augmenter X jusqu'à trouver la 
+        meilleure valeur de X qui minimise l'erreur quadratique moyenne entre les 2 signaux. X étant donc le nombre de frames optimal pour décaler le signal
+        et retrouver un mouvement qui lui ressemble le plus, ce qui nous donne, une fois convertit en secondes, la période.
+        Ce traitement est défini dans la méthode "_detectBySliding()" de l'analyseur.
 
     Test : 
 
         Sujet : traction.mp4
+        Technologies :Le
+            Capture du signal : Farneback
+            Masque : MOG2
+            Analyse : Sliding
+
+
+    Résultats :
+
+        "periode_sec": 5.9,
+        "frequence_hz": 0.17,
+        "nb_cycles_mouvement": 3.03
+
+        Résultats conformes à la vidéo.
+
+    Analyse : 
+
+        D'après les résultats, on peut supposer que cette méthode est efficace notamment pour traiter un signal en rafales, 
+        il faudra par la suite voir si elle est également capable de traiter d'autres types de vidéos/signaux.
+
+    Test : 
+
+        Sujet : course_tapis.mp4
         Technologies :
             Capture du signal : Farneback
             Masque : MOG2
             Analyse : Sliding
 
-    Résultats :
+    Résultats : 
 
-        L'analyseur détecte une période de 5.9 sec soit 3.03 cycles complets de mouvements ce qui correspond bien aux données de la vidéo.
+        "periode_sec": 0.67,
+        "frequence_hz": 1.5,
+        "nb_cycles_mouvement": 29.9
 
-    Analyse : 
+        Résultats conformes à la vidéo.
 
-        Cette méthode permet bien de traiter un signal impulsionnel, il faudra par la suite voir si elle est capable de traiter également d'autres types de vidéos/signaux.
+    Analyse :
 
-
+        D'après les résultats, "_detectBySliding()" semble offrir de bon résultats aussi bien pour un signal en rafales que pour un signal périodique.
 
 
 
