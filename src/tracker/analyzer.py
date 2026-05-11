@@ -172,7 +172,6 @@ class Analyzer():
         
         if nb_reps > 1:
             # La période est le temps entre les débuts de mouvements successifs
-            # C'est beaucoup plus précis pour un rythme
             avg_period_frames = np.mean(np.diff(starts))
             period = avg_period_frames / fps
             frequency = 1 / period

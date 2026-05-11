@@ -20,7 +20,8 @@ Etude 1:
         Dans un second temps, après avoir récupéré ce flux optique, il a fallu l'étudier pour en extraire un rythme. 
         L'observation de la vidéo a guidé mon choix de méthode : l'individu effectuait des tractions avec un temps d'arrêt marqué 
         en haut et en bas du mouvement, ce comportement générant un signal discontinu, composé de pics d'activité séparés par 
-        des phases de silence. J'ai donc conçu un analyseur "analyzer.py" dont le rôle est de convertir ce flux vectoriel complexe 
+        des phases de silence. Nous appellerons ce type de signal un signal à motifs périodiques, désignant un signal composé de motifs identiques 
+        se répétant à intervalles constants. J'ai donc conçu un analyseur "analyzer.py" dont le rôle est de convertir ce flux vectoriel complexe 
         en un signal scalaire unidimensionnel, traité par la méthode "_detectStartStop()" : à chaque frame, il calcule le barycentre 
         des points en mouvement (ceux dont la magnitude du flux dépasse un certain seuil) permettant de passer d'un nuage de vecteurs 
         à une seule coordonnée (x, y) représentant la position moyenne de l'effort, et répétant la dernière position connue lors 
@@ -42,11 +43,14 @@ Etude 1:
 
     Résultats : 
 
-        D'après les résultats fournis par l'analyseur, 11 mouvements sont détectés.
-        Cependant, après avoir observé la vidéo, il n'y a pourtant que 3 mouvements de tractions soit 6 mouvements (montée et descente) que l'algorithme aurait du détecter.
+        "periode_sec": 1.21,
+        "frequence_hz": 0.82,
+        "nb_cycles_mouvement": 12,
+        "duree_active_sec": 14.77
 
     Analyse : 
 
+        Après avoir observé la vidéo, il n'y a pourtant que 3 mouvements de tractions soit 6 mouvements (montée et descente) que l'algorithme aurait du détecter.
         L'inexactitude des résultats s'explique par la nature des features employées.
         En premier lieu, la plupart des features sont placées sur des objets du décor car ils présentent des coins de meilleure qualité que le corps humain. On peut supposer que sur d'autres vidéos, il pourrait même n'y avoir aucun point placé sur le sujet d'étude, ce qui rendrait le tracking totalement inexploitable.
         Par ailleurs, en observant l'interface graphique, qui affiche les trajectoires des points trackés (lignes colorées) et leurs positions courantes (points colorés), on remarque que les points glissent d'une partie du corps à une autre, voire se fixent sur le fond lors des mouvements. 
@@ -82,22 +86,25 @@ Etude 2 :
 
     Résultats : 
 
+
         Avec ce signal de meilleure qualité, l'analyseur parvient bel et bien à détecter 6 mouvements conformément à ce qui est attendu.
         Cependant, il retourne une période de 2.65 sec ce qui ne correspond pas à la réalité observée.
-        Cela a du sens étant donné que le mouvement dans la vidéo n'est pas régulier, il calcule une période moyenne qui n'a pas de sens puisque l'intervalle entre les mouvements de montée plus descente est bref 
-        alors qu'entre une descente et une montée, il est plus long. Une période qui aurait du sens serait la période entre 2 cycles complets de tractions, donc entre 2 montées ou entre 2 descentes.
+        Cette erreur est attendue étant donné que le mouvement dans la vidéo n'est pas régulier, l'analyseur calcule une période moyenne entre chaque début de mouvement ce 
+        qui n'a pas de sens puisque l'intervalle entre les mouvements de montée puis descente est bref alors qu'entre une descente et une montée, il est plus long. 
+        Une période qui aurait du sens serait la période entre 2 cycles complets de tractions, la période entre les motifs, donc entre 2 montées ou entre 2 descentes.
 
     Analyse : 
 
         Farneback fournit un champ de vecteurs dense donc tous les pixels dont la magnitude dépasse un seuil contribuent au calcul de la moyenne, 
-        ce qui stabilise le signal considérablement par rapport à une détection des points avec Shi-Tomasi.
+        ce qui stabilise le signal considérablement par rapport à une détection des points avec Shi-Tomasi et permet bien à l'analyse de fonctionner.
+        Cela dit, l'analyse en elle-même permet bien de trouver le nombre de mouvements mais pas la période/fréquence de façon satfisfaisante.
 
 Etude 3 :
 
     Objectif : 
 
         Définir une autre manière de détecter les mouvements pour adapter l'analyseur à tout type de vidéo (comme de la course à pied) dans laquelle le mouvement est continu 
-        et donc pour lequel on peut pas utiliser la méthode StartStop car il n'y a pas de pause entre les mouvementse.
+        et donc pour lequel on peut pas utiliser la méthode StartStop car il n'y a pas de pause entre les mouvements.
 
     Protocole :
 
@@ -129,7 +136,7 @@ Etude 3 :
     Analyse :
 
         La FFT ne correspond pas à l'étude de ce genre de signal car elle suppose un signal stationnaire avec une périodicité unique et constante.
-        Or notre signal possède une structure hiérarchique à deux niveaux temporels distincts : l'espacement des impulsions à l'intérieur d'un motif et l'espacement entre les motifs. 
+        Or notre signal possède une structure hiérarchique à deux niveaux temporels distincts : la période entre les impulsions à l'intérieur d'un motif et la période entre les motifs. 
         Face à cette ambiguïté, la FFT ne peut pas identifier une période fondamentale unique, elle "voit" simultanément ces deux échelles temporelles 
         et produit un spectre sans pic dominant clair. 
 
@@ -161,12 +168,13 @@ Etude 3 :
 
     Objectif : 
 
-        Réussir à extraire une fréquence de répétition d'un motif dans un signal non pérdiodique.
+        Réussir à extraire une fréquence de répétition d'un motif dans un signal à motifs pérdiodiques.
 
     Protocole : 
 
-        Comme vu dans l'étude 2, bien que nous ayons pu récupérer le nombre de mouvements effectués, StartStop n'a pas permit de récupérer une fréquence d'exécution à partir de traction.mp4.
-        Dans l'étude 3, nous avons vu que la FFT ne permettait pas d'analyser un signal pérdiodique comme dans traction.mp4.
+        Comme vu dans l'étude 2, bien que nous ayons pu récupérer le nombre de mouvements effectués, StartStop n'a pas permit de récupérer une fréquence 
+        d'exécution à partir d'un signal à motifs périodiques comme dans traction.mp4.
+        Dans l'étude 3, nous avons vu que la FFT n'était pas adaptée pour traiter un signal à motifs périodiques comme dans traction.mp4.
 
         Nouvelle approche : comparer l'évolution des magnitudes moyennes récupérée avec Farneback à elle-même décalée de X secondes et augmenter X jusqu'à trouver la 
         meilleure valeur de X qui minimise l'erreur quadratique moyenne entre les 2 signaux. X étant donc le nombre de frames optimal pour décaler le signal
@@ -176,11 +184,10 @@ Etude 3 :
     Test : 
 
         Sujet : traction.mp4
-        Technologies :Le
+        Technologies :
             Capture du signal : Farneback
             Masque : MOG2
             Analyse : Sliding
-
 
     Résultats :
 
@@ -188,11 +195,10 @@ Etude 3 :
         "frequence_hz": 0.17,
         "nb_cycles_mouvement": 3.03
 
-        Résultats conformes à la vidéo.
-
     Analyse : 
 
-        D'après les résultats, on peut supposer que cette méthode est efficace notamment pour traiter un signal en rafales, 
+        Résultats conformes à la vidéo.
+        D'après les résultats, on peut supposer que cette méthode est efficace notamment pour traiter un signal avec une période entre des motifs qui se répètent, 
         il faudra par la suite voir si elle est également capable de traiter d'autres types de vidéos/signaux.
 
     Test : 
@@ -209,11 +215,10 @@ Etude 3 :
         "frequence_hz": 1.5,
         "nb_cycles_mouvement": 29.9
 
-        Résultats conformes à la vidéo.
-
     Analyse :
 
-        D'après les résultats, "_detectBySliding()" semble offrir de bon résultats aussi bien pour un signal non périodique que pour un signal périodique.
+        Résultats conformes à la vidéo.
+        D'après les résultats, "_detectBySliding()" semble offrir de bon résultats aussi bien pour un signal à motifs périodiques que pour un signal périodique.
 
 
 
