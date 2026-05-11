@@ -235,11 +235,10 @@ class Analyzer():
         plt.close()
     
     
-    #TODO: essayer de minimiser la période également
     def _detectBySliding(self, fps: float) -> None:
+        
         array            = np.array(self.mean_magnitudes)
         indices_non_nuls = np.nonzero(array)[0]
-        duree_totale = len(self.mean_magnitudes) / fps
         
         if len(indices_non_nuls) < 10:
             print("[GoodAnalyzer] Signal trop court pour l'analyse par fenêtre glissante.")
@@ -265,6 +264,7 @@ class Analyzer():
 
         if best_gap > 0:
             periode = best_gap / fps
+            self._plotEvolution(self.mean_magnitudes, self.mean_angles, fps)
             self._writeResults({
                 "periode_sec": round(periode, 2),
                 "frequence_hz": round(1 / periode, 2),
