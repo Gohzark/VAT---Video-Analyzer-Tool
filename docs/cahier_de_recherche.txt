@@ -161,12 +161,12 @@ Etude 3 :
 
     Objectif : 
 
-        Réussir à extraire une fréquence de répétition d'un motif dans un signal impulsionnel.
+        Réussir à extraire une fréquence de répétition d'un motif dans un signal non pérdiodique.
 
     Protocole : 
 
         Comme vu dans l'étude 2, bien que nous ayons pu récupérer le nombre de mouvements effectués, StartStop n'a pas permit de récupérer une fréquence d'exécution à partir de traction.mp4.
-        Dans l'étude 3, nous avons vu que la FFT ne permettait pas de bien analyser un signal impulsionnel comme dans traction.mp4.
+        Dans l'étude 3, nous avons vu que la FFT ne permettait pas d'analyser un signal pérdiodique comme dans traction.mp4.
 
         Nouvelle approche : comparer l'évolution des magnitudes moyennes récupérée avec Farneback à elle-même décalée de X secondes et augmenter X jusqu'à trouver la 
         meilleure valeur de X qui minimise l'erreur quadratique moyenne entre les 2 signaux. X étant donc le nombre de frames optimal pour décaler le signal
@@ -213,7 +213,7 @@ Etude 3 :
 
     Analyse :
 
-        D'après les résultats, "_detectBySliding()" semble offrir de bon résultats aussi bien pour un signal en rafales que pour un signal périodique.
+        D'après les résultats, "_detectBySliding()" semble offrir de bon résultats aussi bien pour un signal non périodique que pour un signal périodique.
 
 
 
