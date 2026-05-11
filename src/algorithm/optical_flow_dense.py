@@ -18,7 +18,8 @@ def run_dense(cap, mask, tracker, centering):
     smooth_tx, smooth_ty = 0, 0
     alpha = 0.1
     M_transform = np.float32([[1, 0, 0], [0, 1, 0]])  # identité par défaut
-
+    first_detection = True
+    
     while True:
         ret, frame = cap.read()
         if not ret:
@@ -33,7 +34,7 @@ def run_dense(cap, mask, tracker, centering):
         fg_mask = cv.morphologyEx(fg_mask, cv.MORPH_OPEN, kernel)
 
         h, w = frame.shape[:2]
-
+        
         # Centrage uniquement si activé ET masque disponible
         if centering and mask is not None:
             total_area = h * w
@@ -47,8 +48,13 @@ def run_dense(cap, mask, tracker, centering):
                     cy = y + h_obj // 2
                     target_tx = (w // 2) - cx
                     target_ty = (h // 2) - cy
-                    smooth_tx = (1 - alpha) * smooth_tx + alpha * target_tx
-                    smooth_ty = (1 - alpha) * smooth_ty + alpha * target_ty
+                    if first_detection:
+                        smooth_tx = target_tx
+                        smooth_ty = target_ty
+                        first_detection = False
+                    else :
+                        smooth_tx = (1 - alpha) * smooth_tx + alpha * target_tx
+                        smooth_ty = (1 - alpha) * smooth_ty + alpha * target_ty
                     M_transform = np.float32([[1, 0, smooth_tx], [0, 1, smooth_ty]])
             frame_centered = cv.warpAffine(frame, M_transform, (w, h))
             mask_centered  = cv.warpAffine(fg_mask, M_transform, (w, h))

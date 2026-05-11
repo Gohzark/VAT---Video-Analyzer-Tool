@@ -1,6 +1,6 @@
 Cahier de recherche - Computer Vision - DOLBEAU Tino M1
 
-Etude 1:
+Étude 1:
 
     Objectif : 
 
@@ -36,6 +36,7 @@ Etude 1:
     Test :
         
         Sujet : Video de traction (traction.mp4) : caméra fixe, mouvements séparés par des pauses.
+
         Technologies :
             Capture du signal : Shi-Tomasi + Lucas-Kanade
             Masque : Aucun
@@ -220,6 +221,47 @@ Etude 3 :
         Résultats conformes à la vidéo.
         D'après les résultats, "_detectBySliding()" semble offrir de bon résultats aussi bien pour un signal à motifs périodiques que pour un signal périodique.
 
+Étude 5 :
 
+    Objectif : 
+
+        Analyser une vidéo de course à pied sur laquelle le sujet se déplace, contrairement à la course sur tapis.
+
+    Protocole : 
+
+        On constate qu'il est impossible d'avoir un signal exploitable sur un sujet dont la magnitude global est plus forte que la magnitude des mouvements internes du sujet.
+        En effet, sur la vidéo de course "sprint.mp4" le sujet traverse le champ de la caméra de la gauche vers la droite, et il est impossible de compter ses 
+        pas car le signal des foulées est bruité par le déplacement rectiligne du coureur (voir "sprint.mp4/Farneback/Sliding/MOG2/no_centering").
+
+        L'approche envisagée est de simuler une caméra qui suit le sujet en appliquant une translation compensatoire à chaque frame.
+        Pour ce faire, à chaque frame, on cherche le plus grand contour dans le masque de premier plan, c'est le sujet.
+        Puis, on calcule le centre de la boite qui doit l'entourer et on calcule la translation nécessaire pour ramener ce centre au milieu de l'image.
+        Cette translation est lissée exponentiellement avec un facteur alpha = 0.1.
+        La transformation affine résultante est appliquée à la fois sur la frame et sur le masque, pour qu'ils restent cohérents entre eux. 
+        Si aucun contour significatif n'est détecté, la dernière transformation connue est conservée.
+        
+        Sans centrage le flux optique va capter ce déplacement global en plus du mouvement des membres. 
+        Avec le centrage, l'individu reste approximativement fixe au centre et le flux optique ne capte que le mouvement local du corps.
+
+    Test : 
+
+        Sujet : sprint.mp4
+        Technologies : 
+            Capture du signal : Farneback
+            Masque : MOG2
+            Centering : Oui
+            Analyse : Sliding
+
+    Résultats :
+
+        "periode_sec": 0.88,
+        "frequence_hz": 1.13,
+        "nb_cycles_mouvement": 3.39
+
+    Analyse :
+
+        Les résultats sont inohérents avec les données observées
+
+        
 
     

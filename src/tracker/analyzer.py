@@ -279,19 +279,18 @@ class Analyzer():
 
     def _writeResults(self, data: dict) -> None:
         file_path = os.path.join(self.output_dir, "results.json")
-
         results = {}
         if os.path.exists(file_path):
             with open(file_path, "r", encoding="utf-8") as f:
                 results = json.load(f)
-
         node = results
         for key in [self.video_name, self.algorithm.value, self.analyze.value, self.mask.value]:
             node = node.setdefault(key, {})
-
-        node["centering"] = self.centering
-        node.update(data)
-
+        if self.mask.value != "none" and self.centering:
+            centering_key = "centering"
+        else:
+            centering_key = "no_centering"
+        node.setdefault(centering_key, {}).update(data)
         with open(file_path, "w", encoding="utf-8") as f:
             json.dump(results, f, indent=4, ensure_ascii=False)
 

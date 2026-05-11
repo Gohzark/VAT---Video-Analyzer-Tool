@@ -25,8 +25,8 @@ def createMask(cap, mask_type):
         case Mask.MOG2:
             print("Masque MOG2 (Mixture de gaussiennes) sélectionné")
             #Monter le seuil de détection (varThreshold) pour éviter les petits mouvements parasites, et réduire l'historique pour être plus réactif aux changements rapides
-            warmup_duration = 10
-            background_threshold = 30
+            warmup_duration = 30
+            background_threshold = 20
             mask = cv.createBackgroundSubtractorMOG2(history=warmup_duration, varThreshold=background_threshold, detectShadows=False)
             # Phase de Warm-up du background subtraction pour stabiliser le modèle avant de commencer à traiter les mouvements
             print("Initialisation du fond (merci de patienter)...")
