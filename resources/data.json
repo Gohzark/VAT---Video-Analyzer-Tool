@@ -22,5 +22,29 @@
             "total_frames": 599,
             "duration_seconds": 19.99
         }
+    },
+    "67.mp4": {
+        "ground_truth": {
+            "frequency_hz": 0.25,
+            "period_seconds": 4.0,
+            "repetitions": 26
+        },
+        "technical_info": {
+            "fps": 120.0,
+            "total_frames": 786,
+            "duration_seconds": 6.55
+        }
+    },
+    "sprint.mp4": {
+        "ground_truth": {
+            "frequency_hz": 5.0,
+            "period_seconds": 0.2,
+            "repetitions": 4
+        },
+        "technical_info": {
+            "fps": 120.0,
+            "total_frames": 96,
+            "duration_seconds": 0.8
+        }
     }
 }

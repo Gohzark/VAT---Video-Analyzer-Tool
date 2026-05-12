@@ -307,6 +307,12 @@ Etude 3 :
     Les résultats avec Kalman sont plus proche de la réalité, toutefois, Kalman nécessite de régler à la main le ratio entre prédiction et mesure
     ce qui est un désavantage.
 
+Étude 7 : 
+
+    Objectif : 
+
+    Explorer des pistes de technologies plus récentes que Farneback pour capturer le mouvement.
+
 
 
     

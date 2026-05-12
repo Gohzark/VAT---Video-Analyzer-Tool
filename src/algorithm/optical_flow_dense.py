@@ -100,7 +100,7 @@ def run_dense(cap, mask, tracker, centering):
         overlay = cv.addWeighted(frame_centered, 1, bgr, 1, 0)
         cv.imshow('Frame', overlay)
         previous_image = frame_gray
-        if cv.waitKey(30) == 27:
+        if cv.waitKey(1) == 27:
             print("Arrêt par l'utilisateur.")
             break
 
