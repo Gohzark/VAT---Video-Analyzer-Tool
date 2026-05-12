@@ -1,9 +1,9 @@
 import numpy as np
 import cv2 as cv
 from tracker.analyzer import *
+from utils.enums import Centering
     
 def run_dense(cap, mask, tracker, centering):
-    
     # Initialisation
     ret, frame = cap.read()
     if not ret:
@@ -35,8 +35,7 @@ def run_dense(cap, mask, tracker, centering):
 
         h, w = frame.shape[:2]
         
-        # Centrage uniquement si activé ET masque disponible
-        if centering and mask is not None:
+        if centering!=Centering.NoCentering and mask is not None:
             total_area = h * w
             seuil_pourcentage = 0.0001
             contours, _ = cv.findContours(fg_mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)

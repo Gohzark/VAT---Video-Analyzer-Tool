@@ -14,6 +14,14 @@ class Mask(Enum):
     def __str__(self):
         return self.name
     
+class Centering(Enum):
+    ExponentialMovingAverage = "EMA"
+    NoCentering = "NoCentering"
+    
+    def __str__(self):
+        return self.name
+    
+
 class Analyze(Enum):
     FFT = "FFT"
     SS = "StartStop"

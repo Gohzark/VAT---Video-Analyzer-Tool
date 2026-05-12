@@ -5,7 +5,7 @@ import argparse
 from tracker.analyzer import Analyzer
 import algorithm.optical_flow_dense as optical_flow_dense
 import algorithm.optical_flow_sparse as optical_flow_sparse
-from utils.enums import Algorithm, Mask, Analyze
+from utils.enums import Algorithm, Mask, Analyze, Centering
 
 def openVideo(video_path):
     if not os.path.exists(video_path):
@@ -84,9 +84,9 @@ if __name__ == "__main__":
         choices=list(Analyze)
     )
     parser.add_argument(
-        '--centering',
-        action='store_true',
-        default=False,
+        'centering',
+        type=Centering,
+        choices=list(Centering),
     )
     args = parser.parse_args()
     main(args)
