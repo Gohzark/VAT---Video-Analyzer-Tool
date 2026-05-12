@@ -1,7 +1,7 @@
 from enum import Enum
 
 class Algorithm(Enum):
-    LK = "LK"
+    LucasKanade = "LK"
     Farneback = "Farneback"
 
     def __str__(self):
@@ -17,14 +17,14 @@ class Mask(Enum):
 class Centering(Enum):
     ExponentialMovingAverage = "EMA"
     NoCentering = "NoCentering"
-    
+    Kalman = "Kalman"
     def __str__(self):
         return self.name
     
 
 class Analyze(Enum):
-    FFT = "FFT"
-    SS = "StartStop"
+    FastFourierTransformation = "FFT"
+    StartStop = "SS"
     Sliding = "Sliding"
     
     def __str__(self):

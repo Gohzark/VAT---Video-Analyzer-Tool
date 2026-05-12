@@ -254,9 +254,10 @@ Etude 3 :
 
     Résultats :
 
-        "periode_sec": 0.22,
-        "frequence_hz": 4.62,
-        "nb_cycles_mouvement": 3.65
+        "periode_sec": 0.35,
+        "frequence_hz": 2.86,
+        "nb_cycles_mouvement": 2.26
+        
 
     Analyse :
 
@@ -295,7 +296,17 @@ Etude 3 :
         Centrage : Kalman
         Analyse : Sliding
 
+    Résultats :
 
-        
+    "periode_sec": 0.23,
+    "frequence_hz": 4.44,
+    "nb_cycles_mouvement": 3.52
+
+    Analyse : 
+
+    Les résultats avec Kalman sont plus proche de la réalité, toutefois, Kalman nécessite de régler à la main le ratio entre prédiction et mesure
+    ce qui est un désavantage.
+
+
 
     

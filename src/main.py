@@ -26,7 +26,7 @@ def createMask(cap, mask_type):
             print("Masque MOG2 (Mixture de gaussiennes) sélectionné")
             #Monter le seuil de détection (varThreshold) pour éviter les petits mouvements parasites, et réduire l'historique pour être plus réactif aux changements rapides
             warmup_duration = 30
-            background_threshold = 15
+            background_threshold = 40
             mask = cv.createBackgroundSubtractorMOG2(history=warmup_duration, varThreshold=background_threshold, detectShadows=False)
             # Phase de Warm-up du background subtraction pour stabiliser le modèle avant de commencer à traiter les mouvements
             print("Initialisation du fond (merci de patienter)...")
@@ -42,9 +42,9 @@ def createMask(cap, mask_type):
 
 def initAnalyse(analyze, video_name, height, width, algorithm, mask, centering):
     match analyze:
-        case Analyze.FFT:
+        case Analyze.FastFourierTransformation:
             print("Analyse par FFT sélectionnée")
-        case Analyze.SS:
+        case Analyze.StartStop:
             print("Analyse StartStop sélectionnée")
         case Analyze.Sliding:
             print("Analyse par décalage du signal sélectionnée")
@@ -52,7 +52,7 @@ def initAnalyse(analyze, video_name, height, width, algorithm, mask, centering):
         
 def useAlgorithm(cap, algorithm, mask, tracker, centering):
     match algorithm:
-        case Algorithm.LK:
+        case Algorithm.LucasKanade:
             print("Algorithme Lucas-Kanade (sparse) sélectionné")
             optical_flow_sparse.run_sparse(cap, mask, tracker)
         case Algorithm.Farneback:

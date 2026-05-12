@@ -7,7 +7,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from scipy.ndimage import minimum_filter
 from utils.flow_data import FlowData
-from utils.enums import Algorithm, Analyze, Mask
+from utils.enums import Algorithm, Analyze, Mask, Centering
 
 #TODO: Ajouter le lissage du déplacement de la caméra
 
@@ -58,7 +58,7 @@ class Analyzer():
 
 
     def update(self, flow_data: FlowData) -> None:
-        if self.analyze == Analyze.SS:
+        if self.analyze == Analyze.StartStop:
             self._update_startstop(flow_data)
         else:
             self._update_flow(flow_data)
@@ -133,11 +133,11 @@ class Analyzer():
 
     def detectMovements(self, fps: float) -> None:
         match self.analyze:
-            case Analyze.FFT:
+            case Analyze.FastFourierTransformation:
                 self._detectFFT(fps)
             case Analyze.Sliding:
                 self._detectBySliding(fps)
-            case Analyze.SS:
+            case Analyze.StartStop:
                 self._detectStartStop(fps)
 
     def _detectStartStop(self, fps: float) -> None:
@@ -286,10 +286,10 @@ class Analyzer():
         node = results
         for key in [self.video_name, self.algorithm.value, self.analyze.value, self.mask.value]:
             node = node.setdefault(key, {})
-        if self.mask.value != "none" and self.centering:
-            centering_key = "centering"
-        else:
-            centering_key = "no_centering"
+        if self.centering != Centering.NoCentering or self.mask is not None:
+            centering_key = self.centering.value
+        else :
+            centering_key = "NoCentering"
         node.setdefault(centering_key, {}).update(data)
         with open(file_path, "w", encoding="utf-8") as f:
             json.dump(results, f, indent=4, ensure_ascii=False)
@@ -319,8 +319,8 @@ class Analyzer():
             self.video_name,
             self.algorithm.value,
             self.analyze.value,
-            self.mask.value if self.mask else "no_mask",
-            "centering" if self.centering else "no_centering",
+            self.mask.value,
+            self.centering.value
         )
         os.makedirs(path, exist_ok=True)
         return path
