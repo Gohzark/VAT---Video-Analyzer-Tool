@@ -277,15 +277,15 @@ Etude 3 :
 
     Objectif : 
 
-    Modifier la technologie de lissage de la caméra pour avoir un centrage fluide sans bruit dans le signal du au déplacement de la caméra.
+        Modifier la technologie de lissage de la caméra pour avoir un centrage fluide sans bruit dans le signal du au déplacement de la caméra.
 
     Protocole : 
 
-    Mon approche est de remplacer le lissage exponentiel par un filtre de Kalman grâce à la fonction "KalmanFilter()" d'OpenCV.
-    Le filtre de Kalman va estimer la trajectoire "la plus probable" du sujet en combinant la mesure de la position du sujet et 
-    la prédiction de sa position actuelle obtenue à partir de sa vitesse à la frame précédente.
-    Ainsi, si la détection, le filtre corrige en pondérant la prédiction et la mesure contrairement à EMA qui réagit immédiatement
-    à chaque nouvelle mesure, même si elle est aberrante.
+        Mon approche est de remplacer le lissage exponentiel par un filtre de Kalman grâce à la fonction "KalmanFilter()" d'OpenCV.
+        Le filtre de Kalman va estimer la trajectoire "la plus probable" du sujet en combinant la mesure de la position du sujet et 
+        la prédiction de sa position actuelle obtenue à partir de sa vitesse à la frame précédente.
+        Ainsi, si la détection, le filtre corrige en pondérant la prédiction et la mesure contrairement à EMA qui réagit immédiatement
+        à chaque nouvelle mesure, même si elle est aberrante.
 
     Test :
 
@@ -298,21 +298,17 @@ Etude 3 :
 
     Résultats :
 
-    "periode_sec": 0.23,
-    "frequence_hz": 4.44,
-    "nb_cycles_mouvement": 3.52
+        "periode_sec": 0.23,
+        "frequence_hz": 4.44,
+        "nb_cycles_mouvement": 3.52
 
     Analyse : 
 
-    Les résultats avec Kalman sont plus proche de la réalité, toutefois, Kalman nécessite de régler à la main le ratio entre prédiction et mesure
-    ce qui est un désavantage.
+        Les résultats avec Kalman sont plus proche de la réalité, toutefois, Kalman nécessite de régler à la main le ratio entre prédiction et mesure
+        ce qui est un désavantage.
 
 Étude 7 : 
 
     Objectif : 
 
-    Explorer des pistes de technologies plus récentes que Farneback pour capturer le mouvement.
-
-
-
-    
+        Explorer des pistes de technologies plus récentes que Farneback pour capturer le mouvement.
