@@ -1,6 +1,6 @@
 import numpy as np
 import cv2 as cv
-from tracker.analyzer import *
+from signal_processing.analyzer import *
 from utils.enums import Centering
     
 def _init_kalman():

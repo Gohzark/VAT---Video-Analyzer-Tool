@@ -2,9 +2,9 @@ import sys
 import cv2 as cv
 import os
 import argparse
-from tracker.analyzer import Analyzer
-import algorithm.optical_flow_dense as optical_flow_dense
-import algorithm.optical_flow_sparse as optical_flow_sparse
+from signal_processing.analyzer import Analyzer
+import optical_flow_estimation.optical_flow_dense as optical_flow_dense
+import optical_flow_estimation.optical_flow_sparse as optical_flow_sparse
 from utils.enums import Algorithm, Mask, Analyze, Centering
 
 def openVideo(video_path):
@@ -50,14 +50,19 @@ def initAnalyse(analyze, video_name, height, width, algorithm, mask, centering):
             print("Analyse par décalage du signal sélectionnée")
     return Analyzer(video_name, height, width, algorithm, mask, analyze, centering)
         
-def useAlgorithm(cap, algorithm, mask, tracker, centering):
+def useAlgorithm(cap, algorithm, mask, analyse, centering):
     match algorithm:
         case Algorithm.LucasKanade:
             print("Algorithme Lucas-Kanade (sparse) sélectionné")
-            optical_flow_sparse.run_sparse(cap, mask, tracker)
+            optical_flow_sparse.run_sparse(cap, mask, analyse)
         case Algorithm.Farneback:
             print("Algorithme Farneback (dense) sélectionné")
-            optical_flow_dense.run_dense(cap, mask, tracker, centering)
+            optical_flow_dense.run_dense(cap, mask, analyse, centering)
+        case Algorithm.Megaflow:
+            #nécessite d'avoir généré les flux optiques avec le notebook "megaflow.ipynb" avant de lancer l'analyse
+            print("Algorithme Megaflow (dense) sélectionné")
+            Analyzer.updateMegaflow(analyse)
+            Analyzer.detectMovements(analyse, cap.get(cv.CAP_PROP_FPS))
             
 def main(args):
     cap = openVideo("resources/" + args.video)
@@ -79,14 +84,14 @@ if __name__ == "__main__":
         choices=list(Mask)
     )
     parser.add_argument(
-        'analyse',
-        type=Analyze,
-        choices=list(Analyze)
-    )
-    parser.add_argument(
         'centering',
         type=Centering,
         choices=list(Centering),
+    )
+    parser.add_argument(
+        'analyse',
+        type=Analyze,
+        choices=list(Analyze)
     )
     args = parser.parse_args()
     main(args)

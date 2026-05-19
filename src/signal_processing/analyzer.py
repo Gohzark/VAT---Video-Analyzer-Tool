@@ -140,9 +140,44 @@ class Analyzer():
             case Analyze.StartStop:
                 self._detectStartStop(fps)
 
+    def updateMegaflow(self) -> None:
+        flow_path = os.path.join(self.output_dir, self.video_name, "Megaflow", "megaflow_data.npy")
+        if not os.path.exists(flow_path):
+            print(f"[Analyzer] Fichier introuvable : {flow_path}")
+            return
+
+        flows = np.load(flow_path)  # (N_frames, H, W, 2)
+        print(np.shape(flow_path))
+        for flow in flows:
+            u = flow[..., 0]  # (H, W)
+            v = flow[..., 1]  # (H, W)
+
+            mag = np.sqrt(u ** 2 + v ** 2)
+            ang = np.degrees(np.arctan2(v, u))
+
+            if self.analyze == Analyze.StartStop:
+                ys, xs = np.where(mag > self.threshold)
+                if len(xs) == 0:
+                    self._append_fallback()
+                    continue
+                curr = np.column_stack((xs.astype(float), ys.astype(float)))
+                old  = curr - np.column_stack((u[ys, xs], v[ys, xs]))
+                self._update_from_points(curr, old)
+            else:
+                mask_mouvement = mag > 0
+                if np.any(mask_mouvement):
+                    self.mean_angles.append(float(np.mean(ang[mask_mouvement])))
+                    score = float(np.sum(mag)) / (self.image_width * self.image_height)
+                    self.mean_magnitudes.append(score)
+                else:
+                    self.mean_angles.append(0.0)
+                    self.mean_magnitudes.append(0.0)
+        
+        
+        
     def _detectStartStop(self, fps: float) -> None:
         if len(self.means_x) < 2:
-            print("[GoodAnalyzer] Pas assez de données pour détecter des mouvements.")
+            print("[Analyse] Pas assez de données pour détecter des mouvements.")
             return
 
         norms = np.linalg.norm(
@@ -164,7 +199,7 @@ class Analyzer():
 
         nb_reps = len(starts)
         if nb_reps < 1:
-            print("[GoodAnalyzer] Aucun mouvement distinct trouvé.")
+            print("[Analyse] Aucun mouvement distinct trouvé.")
             return
 
         # Durée totale entre le tout premier mouvement et la fin du dernier
@@ -192,7 +227,7 @@ class Analyzer():
         indices_non_nuls = np.nonzero(array)[0]
 
         if len(indices_non_nuls) < 2:
-            print("[GoodAnalyzer] Pas assez de données non nulles pour la FFT.")
+            print("[Analyse] Pas assez de données non nulles pour la FFT.")
             return
 
         idx_debut  = indices_non_nuls[0]
@@ -241,7 +276,7 @@ class Analyzer():
         indices_non_nuls = np.nonzero(array)[0]
         
         if len(indices_non_nuls) < 10:
-            print("[GoodAnalyzer] Signal trop court pour l'analyse par fenêtre glissante.")
+            print("[Analyse] Signal trop court pour l'analyse par décalage du signal.")
             return
 
         idx_debut         = indices_non_nuls[0]
@@ -253,7 +288,7 @@ class Analyzer():
         max_gap = N // 2
 
         if min_gap >= max_gap:
-            print("[GoodAnalyzer] Signal trop court pour la fréquence minimale demandée.")
+            print("[Analyse] Signal trop court pour la fréquence minimale demandée.")
             return
 
         best_gap, best_error = 0, sys.float_info.max

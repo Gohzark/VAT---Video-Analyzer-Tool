@@ -3,7 +3,8 @@ from enum import Enum
 class Algorithm(Enum):
     LucasKanade = "LK"
     Farneback = "Farneback"
-
+    Megaflow = "Megaflow"
+    
     def __str__(self):
         return self.name
     
