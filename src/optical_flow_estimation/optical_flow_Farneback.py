@@ -11,7 +11,7 @@ def _init_kalman():
     kalman.measurementNoiseCov = np.eye(2, dtype=np.float32) * 50
     return kalman
 
-def run_dense(cap, mask, tracker, centering):
+def run_Farneback(cap, mask, centering):
     # Initialisation
     ret, frame = cap.read()
     if not ret:
@@ -20,7 +20,6 @@ def run_dense(cap, mask, tracker, centering):
     previous_image = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
     hsv = np.zeros_like(frame)
     hsv[..., 1] = 255
-    fps = cap.get(cv.CAP_PROP_FPS)
 
     # Variables EMA
     smooth_tx, smooth_ty = 0, 0
@@ -32,7 +31,8 @@ def run_dense(cap, mask, tracker, centering):
     kalman_initialized = False
 
     M_transform = np.float32([[1, 0, 0], [0, 1, 0]])
-
+    frames_data = []
+    
     while True:
         ret, frame = cap.read()
         if not ret:
@@ -93,7 +93,15 @@ def run_dense(cap, mask, tracker, centering):
         mask_bool = mask_centered > 0
         flow[~mask_bool] = 0
         mag, ang = cv.cartToPolar(flow[..., 0], flow[..., 1], angleInDegrees=True)
-        tracker.update(FlowData(mag=mag, ang=ang))
+        
+        mask_bool = mask_centered > 0
+        if np.any(mask_bool):
+            score = float(np.sum(mag[mask_bool])) / (h * w)
+            angle = float(np.mean(ang[mask_bool]))
+        else:
+            score, angle = 0.0, 0.0
+        frames_data.append((score, angle))
+        
         hsv[..., 0] = ang * 180 / np.pi / 2
         hsv[..., 2] = cv.normalize(mag, None, 0, 255, cv.NORM_MINMAX)
         bgr = cv.cvtColor(hsv, cv.COLOR_HSV2BGR)
@@ -107,5 +115,4 @@ def run_dense(cap, mask, tracker, centering):
     cap.release()
     cv.destroyAllWindows()
     print("Calcul des mouvements finaux...")
-    tracker.detectMovements(fps)
     print("Terminé.")

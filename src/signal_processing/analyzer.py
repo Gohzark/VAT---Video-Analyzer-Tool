@@ -6,20 +6,14 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from scipy.ndimage import minimum_filter
-from utils.flow_data import FlowData
 from utils.enums import Algorithm, Analyze, Mask, Centering
 
-#TODO: Ajouter le lissage du déplacement de la caméra
+#TODO: Réparer ce merdier
 
 class Analyzer():
     video_name: str
-    output_dir: str
     image_width: int
     image_height: int
-    mean_angles: list
-    mean_magnitudes: list
-    means_x: list
-    means_y: list
     analyze: Analyze
     threshold: float
     algorithm: Algorithm
@@ -47,143 +41,29 @@ class Analyzer():
         script_dir = os.path.dirname(os.path.abspath(__file__))
         self.output_dir = os.path.join(script_dir, "../../outputs")
         os.makedirs(self.output_dir, exist_ok=True)
-        self.analyze = analyze
         if (centering and mask is not None):
             centering = True
         self.threshold = threshold
-        self.mean_magnitudes = []
-        self.mean_angles = []
-        self.means_x = []
-        self.means_y = []
 
-
-    def update(self, flow_data: FlowData) -> None:
-        if self.analyze == Analyze.StartStop:
-            self._update_startstop(flow_data)
-        else:
-            self._update_flow(flow_data)
-
-    def _update_flow(self, flow_data: FlowData) -> None:
-        if flow_data.is_dense():
-            magn = flow_data.mag
-            ang  = flow_data.ang
-        elif flow_data.is_sparse():
-            curr = flow_data.current_points
-            old  = flow_data.old_points
-            if len(curr) == 0 or len(old) == 0:
-                self.mean_angles.append(0.0)
-                self.mean_magnitudes.append(0.0)
-                return
-            diff = curr - old
-            magn = np.linalg.norm(diff, axis=1)
-            ang  = np.degrees(np.arctan2(diff[:, 1], diff[:, 0]))
-        else:
-            self.mean_angles.append(0.0)
-            self.mean_magnitudes.append(0.0)
-            return
-
-        mask_mouvement = magn > 0
-        if np.any(mask_mouvement):
-            self.mean_angles.append(float(np.mean(ang[mask_mouvement])))
-            score = float(np.sum(magn)) / (self.image_width * self.image_height)
-            self.mean_magnitudes.append(score)
-        else:
-            self.mean_angles.append(0.0)
-            self.mean_magnitudes.append(0.0)
-
-    def _update_startstop(self, flow_data: FlowData) -> None:
-        if flow_data.is_sparse():
-            self._update_from_points(flow_data.current_points, flow_data.old_points)
-        elif flow_data.is_dense():
-            mag = flow_data.mag
-            ang = flow_data.ang
-            ys, xs = np.where(mag > self.threshold)
-            if len(xs) == 0:
-                self._append_fallback()
-                return
-            curr = np.column_stack((xs.astype(float), ys.astype(float)))
-            old  = curr - np.column_stack((
-                mag[ys, xs] * np.cos(np.radians(ang[ys, xs])),
-                mag[ys, xs] * np.sin(np.radians(ang[ys, xs])),
-            ))
-            self._update_from_points(curr, old)
-        else:
-            self._append_fallback()
-
-    def _update_from_points(self, curr: np.ndarray, old: np.ndarray) -> None:
-        if len(curr) == 0 or len(old) == 0:
-            self._append_fallback()
-            return
-        magn = np.linalg.norm(curr - old, axis=1)
-        moving_points = curr[magn > self.threshold]
-        if len(moving_points) > 0:
-            mean_xy = np.mean(moving_points, axis=0)
-            self.means_x.append(float(mean_xy[0]))
-            self.means_y.append(float(self.image_height - mean_xy[1]))
-        else:
-            self._append_fallback()
-
-    def _append_fallback(self) -> None:
-        if self.means_x:
-            self.means_x.append(self.means_x[-1])
-            self.means_y.append(self.means_y[-1])
-        else:
-            self.means_x.append(self.image_width  / 2)
-            self.means_y.append(self.image_height / 2)
 
     def detectMovements(self, fps: float) -> None:
+        magnitudes = np.load(os.path.join("outputs", self.video_name, self.algorithm.value, "magnitudes.npy"))
         match self.analyze:
             case Analyze.FastFourierTransformation:
-                self._detectFFT(fps)
+                self._detectFFT(magnitudes, fps)
             case Analyze.Sliding:
-                self._detectBySliding(fps)
+                self._detectBySliding(magnitudes, fps)
             case Analyze.StartStop:
-                self._detectStartStop(fps)
-
-    def updateMegaflow(self) -> None:
-        flow_path = os.path.join(self.output_dir, self.video_name, "Megaflow", "megaflow_data.npy")
-        if not os.path.exists(flow_path):
-            print(f"[Analyzer] Fichier introuvable : {flow_path}")
-            return
-
-        flows = np.load(flow_path)  # (N_frames, H, W, 2)
-        print(np.shape(flow_path))
-        for flow in flows:
-            u = flow[..., 0]  # (H, W)
-            v = flow[..., 1]  # (H, W)
-
-            mag = np.sqrt(u ** 2 + v ** 2)
-            ang = np.degrees(np.arctan2(v, u))
-
-            if self.analyze == Analyze.StartStop:
-                ys, xs = np.where(mag > self.threshold)
-                if len(xs) == 0:
-                    self._append_fallback()
-                    continue
-                curr = np.column_stack((xs.astype(float), ys.astype(float)))
-                old  = curr - np.column_stack((u[ys, xs], v[ys, xs]))
-                self._update_from_points(curr, old)
-            else:
-                mask_mouvement = mag > 0
-                if np.any(mask_mouvement):
-                    self.mean_angles.append(float(np.mean(ang[mask_mouvement])))
-                    score = float(np.sum(mag)) / (self.image_width * self.image_height)
-                    self.mean_magnitudes.append(score)
-                else:
-                    self.mean_angles.append(0.0)
-                    self.mean_magnitudes.append(0.0)
+                self._detectStartStop(magnitudes, fps)
         
         
-        
-    def _detectStartStop(self, fps: float) -> None:
-        if len(self.means_x) < 2:
+    def _detectStartStop(self, magnitudes: np.ndarray, fps: float) -> None:
+        if np.size(magnitudes) < 2:
             print("[Analyse] Pas assez de données pour détecter des mouvements.")
             return
 
-        norms = np.linalg.norm(
-            np.column_stack((np.diff(self.means_x), np.diff(self.means_y))),
-            axis=1,
-        )
+        norms = np.array(magnitudes)
+    
         clean_window = minimum_filter(norms, size=5, mode='nearest')
         vecteur_bool = clean_window > 0
 
@@ -222,8 +102,8 @@ class Analyzer():
             "duree_active_sec": round(t_total, 2)
         })
         
-    def _detectFFT(self, fps: float) -> None:
-        array = np.array(self.mean_magnitudes)
+    def _detectFFT(self, magnitudes: np.ndarray, fps: float) -> None:
+        array = np.array(magnitudes)
         indices_non_nuls = np.nonzero(array)[0]
 
         if len(indices_non_nuls) < 2:
@@ -232,8 +112,8 @@ class Analyzer():
 
         idx_debut  = indices_non_nuls[0]
         idx_fin    = indices_non_nuls[-1]
-        N          = idx_fin - idx_debut
-        segment    = array[idx_debut:idx_fin + 1]
+        segment = array[idx_debut:idx_fin + 1]
+        N       = len(segment)
 
         fft_result = np.fft.fft(segment)
         freqs      = np.fft.fftfreq(N, d=1 / fps)
@@ -246,14 +126,14 @@ class Analyzer():
         idx_pic       = np.argmax(amplitudes[mask])
         frequence_dom = round(float(freqs_pos[mask][idx_pic]), 2)
         amp_pic       = amplitudes[mask][idx_pic]
-        ratio         = round(amp_pic / np.mean(amplitudes[mask]), 2)
-
-        self._plotEvolution(self.mean_magnitudes, self.mean_angles, fps)
+        ratio = round(float(amp_pic) / float(np.mean(amplitudes[mask])), 2)
+    
+        self._plotEvolution(magnitudes, fps)
         self._writeResults({
             "periode_sec": round(1 / frequence_dom, 2),
             "frequence_hz": frequence_dom,
             "ratio" : ratio,
-            "nb_cycles_mouvement": round(len(self.mean_magnitudes) / fps * frequence_dom, 2),
+            "nb_cycles_mouvement": round(len(magnitudes) / fps * frequence_dom, 2),
             "plot_fft": os.path.join(self._plot_dir()+"/plot_fft.png"),
             "plot_evolution": os.path.join(self._plot_dir()+"/plot_evolution.png"),
         })
@@ -270,9 +150,9 @@ class Analyzer():
         plt.close()
     
     
-    def _detectBySliding(self, fps: float) -> None:
+    def _detectBySliding(self, magnitudes: np.ndarray, fps: float) -> None:
         
-        array            = np.array(self.mean_magnitudes)
+        array            = np.array(magnitudes)
         indices_non_nuls = np.nonzero(array)[0]
         
         if len(indices_non_nuls) < 10:
@@ -299,11 +179,11 @@ class Analyzer():
 
         if best_gap > 0:
             periode = best_gap / fps
-            self._plotEvolution(self.mean_magnitudes, self.mean_angles, fps)
+            self._plotEvolution(magnitudes, fps)
             self._writeResults({
                 "periode_sec": round(periode, 2),
                 "frequence_hz": round(1 / periode, 2),
-                "nb_cycles_mouvement": round(len(self.mean_magnitudes) / fps / periode, 2),
+                "nb_cycles_mouvement": round(len(magnitudes) / fps / periode, 2),
             })
 
     def _costByGap(self, signal: np.ndarray, gap: int) -> float:
@@ -329,23 +209,16 @@ class Analyzer():
         with open(file_path, "w", encoding="utf-8") as f:
             json.dump(results, f, indent=4, ensure_ascii=False)
 
-    def _plotEvolution(self, magnitudes: list, angles: list, fps: float) -> None:
-        
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 6))
-        t_mag = np.linspace(0, len(magnitudes) / fps, len(magnitudes))
-        ax1.plot(t_mag, magnitudes, color='blue', label='Magnitude du mouvement')
-        ax1.set_title("Évolution du mouvement")
-        ax1.set_ylabel("Magnitude")
-        ax1.legend()
-
-        t_ang = np.linspace(0, len(angles) / fps, len(angles))
-        ax2.plot(t_ang, angles, color='red', label='Angle moyen')
-        ax2.set_xlabel("Temps (s)")
-        ax2.set_ylabel("Angle (degrés)")
-        ax2.legend()
-
+    def _plotEvolution(self, magnitudes: list, fps: float) -> None:
+        fig, ax = plt.subplots(figsize=(10, 4))
+        t = np.linspace(0, len(magnitudes) / fps, len(magnitudes))
+        ax.plot(t, magnitudes, color='blue', label='Magnitude du mouvement')
+        ax.set_title("Évolution du mouvement")
+        ax.set_xlabel("Temps (s)")
+        ax.set_ylabel("Magnitude")
+        ax.legend()
         plt.tight_layout()
-        plt.savefig(self._plot_dir()+"/plot_evolution.png")
+        plt.savefig(self._plot_dir() + "/plot_evolution.png", dpi=150)
         plt.close()
 
     def _plot_dir(self) -> str:
@@ -362,7 +235,7 @@ class Analyzer():
 
     def toString(self) -> str:
         match self.analyze:
-            case Analyze.FFT:
+            case Analyze.FastFourierTransformation:
                 return "trackerFFT"
             case Analyze.Sliding:
                 return "trackerSliding"
