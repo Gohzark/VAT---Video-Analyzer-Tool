@@ -8,8 +8,6 @@ import matplotlib.pyplot as plt
 from scipy.ndimage import minimum_filter
 from utils.enums import Algorithm, Analyze, Mask, Centering
 
-#TODO: Réparer ce merdier
-
 class Analyzer():
     video_name: str
     image_width: int
