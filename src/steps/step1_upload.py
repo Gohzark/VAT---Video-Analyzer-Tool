@@ -27,11 +27,13 @@ def executer_etape1():
         barre_progression.empty()
         st.success(f"✅ Fichier '{fichier_charge.name}' correctement chargé !")
 
-        with st.expander("👀 Aperçu de la vidéo téléversée", expanded=True):
-            st.video(chemin_video)
-
         st.write("---")
         if st.button("Passer au traitement ➡️", use_container_width=True):
             st.session_state.video_path = chemin_video
             st.session_state.step = 2
             st.rerun()
+            
+        with st.expander("👀 Aperçu de la vidéo téléversée", expanded=True):
+            st.video(chemin_video)
+
+        

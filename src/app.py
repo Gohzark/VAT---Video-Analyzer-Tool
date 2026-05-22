@@ -7,13 +7,16 @@ from steps.step1_upload import executer_etape1
 from steps.step2_algo import executer_etape2
 from steps.step3_mask import executer_etape3
 from steps.step4_centering import executer_etape4
+from steps.step5_optical_flow import executer_etape5
+from steps.step6_magn import executer_etape6
+
 
 # Gestion des chemins pour éviter les erreurs d'import de modules locaux
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
 
 # --- CONFIGURATION DE LA PAGE ---
-st.set_page_config(page_title="Outil d'analyse de mouvement 📊", layout="centered")
+st.set_page_config(page_title="Outil d'analyse de mouvement 📊", layout="wide")
 
 # --- INITIALISATION DE LA SESSION STATE ---
 if "step" not in st.session_state:
@@ -43,7 +46,13 @@ elif st.session_state.step == 3:
 
 elif st.session_state.step == 4:
     executer_etape4()
+    
+elif st.session_state.step == 5:
+    executer_etape5()
 
+elif st.session_state.step == 6:
+    executer_etape6()
+    
 # --- BOUTON DE RETOUR GLOBAL ---
 if st.session_state.step > 1:
     st.write("---")

@@ -11,12 +11,13 @@ def _init_kalman():
     kalman.measurementNoiseCov = np.eye(2, dtype=np.float32) * 50
     return kalman
 
-def run_Farneback(cap, mask, centering):
+def run_Farneback(cap, mask, centering, callback_progress=None, callback_image=None):
     # Initialisation
     ret, frame = cap.read()
     if not ret:
         print("Erreur : Impossible de lire la première image.")
         return
+    total_frames = int(cap.get(cv.CAP_PROP_FRAME_COUNT))
     previous_image = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
     hsv = np.zeros_like(frame)
     hsv[..., 1] = 255
@@ -105,14 +106,16 @@ def run_Farneback(cap, mask, centering):
         hsv[..., 0] = ang * 180 / np.pi / 2
         hsv[..., 2] = cv.normalize(mag, None, 0, 255, cv.NORM_MINMAX)
         bgr = cv.cvtColor(hsv, cv.COLOR_HSV2BGR)
-        overlay = cv.addWeighted(frame_centered, 1, bgr, 1, 0)
-        cv.imshow('Frame', overlay)
+        img = cv.addWeighted(frame_centered, 1, bgr, 1, 0)
         previous_image = frame_gray
-        if cv.waitKey(1) == 27:
-            print("Arrêt par l'utilisateur.")
-            break
+        
+        
+        if callback_progress:
+            callback_progress(len(frames_data), total_frames)
+            
+        if callback_image:
+            callback_image(img)
 
-    cap.release()
     cv.destroyAllWindows()
-    print("Calcul des mouvements finaux...")
     print("Terminé.")
+    return np.array(frames_data)

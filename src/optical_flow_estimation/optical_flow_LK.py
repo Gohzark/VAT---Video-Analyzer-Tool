@@ -8,12 +8,13 @@ def get_fg_mask(frame, mask_option):
         return fg
     return None 
 
-def run_LK(cap, mask_option, image_width, image_height):
+def run_LK(cap, mask_option, image_width, image_height, callback_progress=None, callback_image=None):
     ret, old_frame = cap.read()
     if not ret or old_frame is None:
         print("Erreur : La première image est vide ou la fin du fichier est atteinte.")
         exit()
-
+        
+    total_frames = int(cap.get(cv.CAP_PROP_FRAME_COUNT))
     feature_params = dict(maxCorners=50, qualityLevel=1e-4, minDistance=20, blockSize=7)
     lk_params = dict(winSize=(15, 15), maxLevel=5,
                      criteria=(cv.TERM_CRITERIA_EPS | cv.TERM_CRITERIA_COUNT, 10, 0.03))
@@ -75,16 +76,15 @@ def run_LK(cap, mask_option, image_width, image_height):
             frames_data.append((0.0, 0.0))
 
         img = cv.add(frame, drawingMask)
-        cv.imshow('frame', img)
         old_gray = frame_gray.copy()
-        if cv.waitKey(15) & 0xff == 27:
-            break
+        
+        
+        if callback_progress:
+            callback_progress(len(frames_data), total_frames)
+            
+        if callback_image:
+            callback_image(img)
 
     cv.destroyAllWindows()
-
-    # Sauvegarde et analyse
-    sparse_path = os.path.join("../../outputs/LK", "optical_flow.npy")
-    os.makedirs(os.path.dirname(sparse_path), exist_ok=True)
-    np.save(sparse_path, np.array(frames_data))  # shape (N, 2)
-    print(f"Signal de flux optique sparse sauvegardé dans : {sparse_path}")
     print("Terminé.")
+    return np.array(frames_data)

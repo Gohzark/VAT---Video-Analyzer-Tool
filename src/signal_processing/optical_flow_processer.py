@@ -10,13 +10,11 @@ import optical_flow_estimation.optical_flow_LK as optical_flow_LK
 
 def openVideo(video_path):
     if not os.path.exists(video_path):
-        print(f"Erreur : Le fichier vidéo '{video_path}' est introuvable.")
-        sys.exit(1)
+        raise FileNotFoundError(f"Erreur : Le fichier vidéo '{video_path}' est introuvable.")
 
     cap = cv.VideoCapture(video_path)
     if not cap.isOpened():
-        print(f"Erreur : Impossible d'ouvrir la source vidéo : {video_path}")
-        sys.exit(1)
+        raise RuntimeError(f"Erreur : Impossible d'ouvrir la source vidéo : {video_path}")
     
     return cap
 
@@ -41,6 +39,35 @@ def createMask(cap, mask_type):
             print("Aucun masque de mouvement sélectionné, le flux optique sera calculé sur toute l'image.")
     return mask
 
+        
+def getOpticalFlow(chemin_video, algorithm, mask_name, centering, callback_progress=None, callback_image=None):
+    video_name = os.path.basename(chemin_video)
+    cap = openVideo(chemin_video)
+    mask = createMask(cap, mask_name)
+    optical_flow = None
+    match algorithm:
+        case Algorithm.LucasKanade:
+            print("Algorithme Lucas-Kanade (sparse) sélectionné")
+            optical_flow = optical_flow_LK.run_LK(cap, 
+                                                  mask, 
+                                                  cap.get(cv.CAP_PROP_FRAME_WIDTH), 
+                                                  cap.get(cv.CAP_PROP_FRAME_HEIGHT), 
+                                                  callback_progress,
+                                                  callback_image)
+        case Algorithm.Farneback:
+            print("Algorithme Farneback (dense) sélectionné")
+            optical_flow = optical_flow_Farneback.run_Farneback(cap,
+                                                                mask, 
+                                                                centering, 
+                                                                callback_progress, 
+                                                                callback_image)
+        case Algorithm.Megaflow:
+            #nécessite d'avoir généré les flux optiques avec le notebook "megaflow.ipynb" avant de lancer l'analyse
+            print("Algorithme Megaflow (dense) sélectionné")
+            optical_flow = np.load(os.path.join("outputs", video_name, algorithm.value, mask_name.value, centering.value, "optical_flow.npy"))
+    cap.release()
+    return optical_flow
+
 def initAnalyse(analyze, video_name, height, width, algorithm, mask, centering):
     match analyze:
         case Analyze.FastFourierTransformation:
@@ -50,28 +77,15 @@ def initAnalyse(analyze, video_name, height, width, algorithm, mask, centering):
         case Analyze.Sliding:
             print("Analyse par décalage du signal sélectionnée")
     return Analyze(video_name, height, width, algorithm, mask, analyze, centering)
-        
-def getSignal(cap, algorithm, mask, centering):
-    match algorithm:
-        case Algorithm.LucasKanade:
-            print("Algorithme Lucas-Kanade (sparse) sélectionné")
-            optical_flow_LK.run_LK(cap, mask, cap.get(cv.CAP_PROP_FRAME_WIDTH), cap.get(cv.CAP_PROP_FRAME_HEIGHT))
-        case Algorithm.Farneback:
-            print("Algorithme Farneback (dense) sélectionné")
-            optical_flow_Farneback.run_Farneback(cap, mask, centering)
-        case Algorithm.Megaflow:
-            #nécessite d'avoir généré les flux optiques avec le notebook "megaflow.ipynb" avant de lancer l'analyse
-            print("Algorithme Megaflow (dense) sélectionné")
-                          
-def flow_to_magnitudes(video: str, algo: str) -> None:
-    flow_path = os.path.join("outputs", video, algo, "optical_flow.npy")
+
+def flowToMagnitudes(flow_path: str) -> None:
     output_path = os.path.join(os.path.dirname(flow_path), "magnitudes.npy")
 
     if os.path.exists(output_path):
         answer = input(f"[flow_to_magnitudes] {output_path} existe déjà. Écraser ? (o/n) : ").strip().lower()
         if answer != 'o':
             print("Fichier conservé, conversion annulée.")
-            return
+            return None
 
     flows = np.load(flow_path)
     result = []
@@ -82,6 +96,5 @@ def flow_to_magnitudes(video: str, algo: str) -> None:
         score = float(np.sum(mag)) / (mag.shape[0] * mag.shape[1])
         result.append((score))
 
-    np.save(output_path, np.array(result))
-    print(f"Magnitudes sauvegardées dans : {output_path}")
+    return np.array(result)
     
