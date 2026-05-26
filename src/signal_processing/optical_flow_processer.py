@@ -50,8 +50,7 @@ def getOpticalFlow(chemin_video, algorithm, mask_name, centering, callback_progr
             print("Algorithme Lucas-Kanade (sparse) sélectionné")
             optical_flow = optical_flow_LK.run_LK(cap, 
                                                   mask, 
-                                                  cap.get(cv.CAP_PROP_FRAME_WIDTH), 
-                                                  cap.get(cv.CAP_PROP_FRAME_HEIGHT), 
+                                                  centering,
                                                   callback_progress,
                                                   callback_image)
         case Algorithm.Farneback:

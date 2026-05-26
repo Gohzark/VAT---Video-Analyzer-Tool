@@ -25,7 +25,7 @@ def executer_etape3():
         with st.container(border=True):
             st.markdown("### MOG2 (Mixture de Gaussiennes)")
             st.write("**Masque de fond dynamique.**")
-            st.caption("Utilise un algorithme de soustraction de fond pour isoler les objets en mouvement. Permet de se concentrer sur les éléments dynamiques de la scène et d'ignorer les zones statiques, ce qui peut améliorer la précision du flux optique.")
+            st.caption("Utilise un algorithme de soustraction de fond pour isoler les objets en mouvement. Permet de se concentrer sur les éléments dynamiques de la scène et d'ignorer les zones statiques ou avec du mouvement parasite, ce qui peut améliorer la précision du flux optique.")
         
 
     # --- ALIGNEMENT DES BOUTONS ---
@@ -47,3 +47,8 @@ def executer_etape3():
             
     if (bouton_gris):
         st.warning("Le masque de mouvement n'est pas compatible avec l'algorithme Megaflow.")
+        
+    st.write("---")
+    if st.button("⬅️ Étape précédente", use_container_width=True):
+        st.session_state.step = 2
+        st.rerun()

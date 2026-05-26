@@ -47,7 +47,7 @@ def executer_etape4():
 
     with col_b2:
         if st.button("🦤",disabled=bouton_gris, key="btn_fb", use_container_width=True):
-            st.session_state.centering = enums.Centering.EMA
+            st.session_state.centering = enums.Centering.ExponentialMovingAverage
             st.session_state.step = 5
             st.rerun()
             
@@ -59,3 +59,8 @@ def executer_etape4():
             
     if (bouton_gris):
         st.warning("Le centrage n'est pas compatible avec l'algorithme Megaflow.")
+        
+    st.write("---")
+    if st.button("⬅️ Étape précédente", use_container_width=True):
+        st.session_state.step = 3
+        st.rerun()

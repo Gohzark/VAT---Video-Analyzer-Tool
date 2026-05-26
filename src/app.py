@@ -1,6 +1,7 @@
 import shutil
 import sys
 import os
+from steps.step7_analysis import executer_etape7
 import utils.enums as enums
 import streamlit as st
 from steps.step1_upload import executer_etape1
@@ -33,7 +34,10 @@ if "mask" not in st.session_state:
     
 if "centering" not in st.session_state:
     st.session_state.centering = enums.Centering.NoCentering
-
+    
+if "analysis" not in st.session_state:
+    st.session_state.analysis = None
+    
 # --- ROUTEUR D'ÉTAPES ---
 if st.session_state.step == 1:
     executer_etape1()
@@ -52,6 +56,9 @@ elif st.session_state.step == 5:
 
 elif st.session_state.step == 6:
     executer_etape6()
+    
+elif st.session_state.step == 7:
+    executer_etape7()
     
 # --- BOUTON DE RETOUR GLOBAL ---
 if st.session_state.step > 1:

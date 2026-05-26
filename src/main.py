@@ -2,7 +2,7 @@ import cv2 as cv
 import argparse
 from signal_processing.optical_flow_processer import flow_to_magnitudes
 from utils.enums import Algorithm, Mask, Analyze, Centering
-from utils.helpers import openVideo, createMask
+from signal_processing.optical_flow_processer import openVideo, createMask, getSignal, initAnalyse
 
 
 

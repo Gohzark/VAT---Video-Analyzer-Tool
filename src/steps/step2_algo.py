@@ -50,3 +50,5 @@ def executer_etape2():
             st.session_state.algorithm = enums.Algorithm.Megaflow
             st.session_state.step = 3
             st.rerun()
+            
+            
