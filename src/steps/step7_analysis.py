@@ -1,9 +1,6 @@
-from signal_processing.optical_flow_processer import flowToMagnitudes
-import numpy as np
+from signal_processing.optical_flow_processer import initAnalyse, detectMovements
 import streamlit as st
-import os
-import optical_flow_estimation.optical_flow_Farneback as optical_flow_Farneback
-import optical_flow_estimation.optical_flow_LK as optical_flow_LK   
+import os 
 from utils import enums
 
 def executer_etape7():
@@ -19,7 +16,7 @@ def executer_etape7():
         with st.container(border=True):
             st.markdown("### 🏁 Start-Stop")
             st.write("**Détecte les arrêts et les reprises de mouvements.**")
-            st.caption("Spécifique au mouvements entrecoupés de pauses.")
+            st.caption("Spécifique aux mouvements entrecoupés de pauses.")
             st.write("") 
 
     with col2:
@@ -40,25 +37,15 @@ def executer_etape7():
     with col_b1:
         if st.button("🏁", key="btn_lk",use_container_width=True):
             st.session_state.analysis = enums.Analyze.StartStop
-            st.session_state.step = 8
-            st.rerun()
 
     with col_b2:
         if st.button("📡", key="btn_fb", use_container_width=True):
-            st.session_state.analysis = enums.Analyze.FFT
-            st.session_state.step = 8
-            st.rerun()
+            st.session_state.analysis = enums.Analyze.FastFourierTransformation
 
     with col_b3:
         if st.button("🛝", key="btn_mf", use_container_width=True):
             st.session_state.analysis = enums.Analyze.Sliding
-            st.session_state.step = 8
-            st.rerun()
         
-    # TODO: continuer
-    if (st.session_state.analysis is not None):
-        analyse = initAnalyse(st.session_state.analysis, st.session_state.video_path, cap.get(cv.CAP_PROP_FRAME_HEIGHT), cap.get(cv.CAP_PROP_FRAME_WIDTH), st.session_state.algorithm, st.session_state.mask, st.session_state.centering)
-        analyse.detectMovements(cap.get(cv.CAP_PROP_FPS))
         
     st.write("---")
     col_b1, col_b2 = st.columns(2)
@@ -67,7 +54,14 @@ def executer_etape7():
             st.session_state.step = 5
             st.rerun()
     with col_b2:
-        if st.session_state.get("analysis_over") or os.path.exists():
-            if st.button("➡️ Étape suivante", use_container_width=True):
-                st.session_state.step = 7
+        if st.session_state.get("analysis_over") :
+            if st.button("➡️ Terminer et revenir au début", use_container_width=True):
+                st.session_state.step = 1
                 st.rerun()
+                
+    if (st.session_state.analysis is not None):
+        analyse = initAnalyse(os.path.basename(st.session_state.video_path), st.session_state.algorithm, st.session_state.mask, st.session_state.centering, st.session_state.analysis)
+        detectMovements(analyse, st.session_state.fps)
+        st.session_state.analysis_over = True
+        st.success("✅ Analyse " + st.session_state.analysis.value + " terminée ! Résultats disponibles.")
+        st.session_state.analysis = None

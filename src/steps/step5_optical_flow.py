@@ -1,12 +1,10 @@
 from functools import partial
-from signal_processing.optical_flow_processer import openVideo, createMask, getOpticalFlow, initAnalyse
+from time import sleep
+from signal_processing.optical_flow_processer import getOpticalFlow
 import numpy as np
 import cv2 as cv
 import streamlit as st
 import os
-import optical_flow_estimation.optical_flow_Farneback as optical_flow_Farneback
-import optical_flow_estimation.optical_flow_LK as optical_flow_LK   
-from utils import enums
 
 def mettre_a_jour_barre(current_frame, total_frames, barre_progression):
     if total_frames <= 0: return
@@ -71,6 +69,7 @@ def executer_etape5():
             return
      
         if optical_flow is not None:
+            sleep(2)
             os.makedirs(dossier_sortie, exist_ok=True)
             np.save(path_optical_flow, optical_flow)
             barre_progression.empty()

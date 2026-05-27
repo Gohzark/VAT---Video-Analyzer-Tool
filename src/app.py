@@ -25,6 +25,9 @@ if "step" not in st.session_state:
 
 if "video_path" not in st.session_state:
     st.session_state.video_path = None
+    
+if "fps" not in st.session_state:
+    st.session_state.fps = None
 
 if "algorithm" not in st.session_state:
     st.session_state.algorithm = enums.Algorithm.Farneback
@@ -76,6 +79,7 @@ if st.session_state.step > 1:
         # Réinitialisation des variables de la session
         st.session_state.step = 1
         st.session_state.video_path = None
+        st.session_state.fps = None
         st.session_state.algorithm = enums.Algorithm.Farneback # Remis à la valeur par défaut
         st.session_state.mask = enums.Mask.NoMask
         st.session_state.centering = enums.Centering.NoCentering

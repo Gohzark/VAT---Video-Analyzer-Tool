@@ -1,0 +1,11 @@
+{
+    "id": "tinodolbeau/megaflow",
+    "title": "megaflow",
+    "code_file": "megaflow.ipynb",
+    "language": "python",
+    "kernel_type": "notebook",
+    "is_private": true,
+    "enable_gpu": true,
+    "enable_internet": true,
+    "dataset_sources": ["tinodolbeau/opticalflow-videos"]
+}
