@@ -1,5 +1,4 @@
 from functools import partial
-from time import sleep
 from signal_processing.optical_flow_processer import getOpticalFlow
 import numpy as np
 import cv2 as cv
@@ -51,7 +50,8 @@ def executer_etape5():
             return
 
         try:
-            optical_flow = getOpticalFlow(
+            # 💡 On récupère dans des variables locales temporaires
+            res_flow, res_fps = getOpticalFlow(
                 video_tmp_path,
                 st.session_state.algorithm, 
                 st.session_state.mask, 
@@ -60,49 +60,46 @@ def executer_etape5():
                 callback_image=partial(mettre_a_jour_image, cadre_video=cadre_video)
             )
         except SystemExit:
-            st.error("Erreur lors de l'ouverture de la vidéo (openVideo a quitté le processus). Vérifiez le fichier et les codecs.")
-            print("[step5] getOpticalFlow a appelé sys.exit lors de l'ouverture de la vidéo")
+            st.error("Erreur lors de l'ouverture de la vidéo...")
             return
         except Exception as e:
             st.error(f"Erreur durant le calcul du flux optique : {e}")
-            print(f"[step5] Exception getOpticalFlow: {e}")
             return
      
-        if optical_flow is not None:
-            sleep(2)
+        # 💡 On vérifie que tout est OK avant de toucher à la session
+        if res_flow is not None and res_fps is not None:
             os.makedirs(dossier_sortie, exist_ok=True)
-            np.save(path_optical_flow, optical_flow)
-            barre_progression.empty()
-            st.success(f"Calcul terminé et enregistré dans : {path_optical_flow}")
+            np.save(path_optical_flow, res_flow)
+            
+            # ✅ Enregistrement propre et groupé dans le session_state
+            st.session_state.fps = res_fps
             st.session_state.calcul_optical_flow_over = True
             st.session_state.step = 6
-            st.rerun()
+            st.session_state.step_over = True
+            
+            barre_progression.empty()
+            st.success(f"Calcul terminé et enregistré dans : {path_optical_flow}")
+            st.rerun() # Optionnel : force le rafraîchissement pour l'étape 6
             
         else:
-            st.error("Le calcul du flux optique a échoué : résultat None")
-            print("[step5] getOpticalFlow a retourné None")
+            st.error("Le calcul a échoué (Données de flux ou FPS manquantes).")
 
     # 🤖 LOGIQUE D'AFFICHAGE DES BOUTONS
     if os.path.exists(path_optical_flow):
         # Le fichier existe déjà : on affiche un avertissement et on demande confirmation
         st.warning(f"⚠️ Le fichier `{path_optical_flow}` existe déjà.")
         
-        if st.button("🔥 Oui, recalculer et écraser", type="primary", use_container_width=True):
-            lancer_le_calcul()
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🔥 Oui, recalculer et écraser", type="primary", use_container_width=True):
+                lancer_le_calcul()
+            
+        with col2:
+            if st.button("❌ Non, conserver le résultat existant", use_container_width=True):
+                st.success("Résultat existant conservé. Vous pouvez passer à l'étape suivante.")
+                st.session_state.step_over = True
         
     else:
         # Le fichier n'existe pas : on affiche le bouton de lancement normal
         if st.button("🚀 Lancer l'analyse du flux optique", use_container_width=True):
             lancer_le_calcul()
-
-    st.write("---")
-    col_b1, col_b2 = st.columns(2)
-    with col_b1:
-        if st.button("⬅️ Étape précédente", use_container_width=True):
-            st.session_state.step = 4
-            st.rerun()
-    with col_b2:
-        if st.session_state.get("calcul_optical_flow_over") or os.path.exists(path_optical_flow):
-            if st.button("➡️ Étape suivante", use_container_width=True):
-                st.session_state.step = 6
-                st.rerun()

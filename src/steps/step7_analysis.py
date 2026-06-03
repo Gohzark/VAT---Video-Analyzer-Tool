@@ -8,6 +8,10 @@ def executer_etape7():
     st.title("⚙️ Configuration du traitement")
     st.subheader("Étape 7 : Analyse des magnitudes")
     st.info(f"Vidéo active : `{os.path.basename(st.session_state.video_path)}`")
+    st.info(f"Algorithme sélectionné : `{st.session_state.algorithm.name}`")
+    st.info(f"Masque sélectionné : `{st.session_state.mask.name}`")
+    st.info(f"Centrage sélectionné : `{st.session_state.centering.name}`")
+
         
     # --- GRILLE DES DESCRIPTIONS ---
     col1, col2, col3 = st.columns(3)
@@ -49,19 +53,12 @@ def executer_etape7():
         
     st.write("---")
     col_b1, col_b2 = st.columns(2)
-    with col_b1:
-        if st.button("⬅️ Étape précédente", use_container_width=True):
-            st.session_state.step = 5
-            st.rerun()
-    with col_b2:
-        if st.session_state.get("analysis_over") :
-            if st.button("➡️ Terminer et revenir au début", use_container_width=True):
-                st.session_state.step = 1
-                st.rerun()
+ 
                 
     if (st.session_state.analysis is not None):
         analyse = initAnalyse(os.path.basename(st.session_state.video_path), st.session_state.algorithm, st.session_state.mask, st.session_state.centering, st.session_state.analysis)
         detectMovements(analyse, st.session_state.fps)
         st.session_state.analysis_over = True
         st.success("✅ Analyse " + st.session_state.analysis.value + " terminée ! Résultats disponibles.")
+        print(f"Analyse terminée !")
         st.session_state.analysis = None

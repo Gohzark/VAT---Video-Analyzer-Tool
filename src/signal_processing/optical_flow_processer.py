@@ -39,36 +39,34 @@ def createMask(cap, mask_type):
             print("Aucun masque de mouvement sélectionné, le flux optique sera calculé sur toute l'image.")
     return mask
 
-        
 def getOpticalFlow(chemin_video, algorithm, mask_name, centering, callback_progress=None, callback_image=None):
     video_name = os.path.basename(chemin_video)
-    cap = openVideo(chemin_video)
-    mask = createMask(cap, mask_name)
-    cap.release()       
-    cap = openVideo(chemin_video) 
-    optical_flow = None
-    match algorithm:
-        case Algorithm.LucasKanade:
-            print("Algorithme Lucas-Kanade (sparse) sélectionné")
-            optical_flow = optical_flow_LK.run_LK(cap, 
-                                                  mask, 
-                                                  centering,
-                                                  callback_progress,
-                                                  callback_image)
-        case Algorithm.Farneback:
-            print("Algorithme Farneback (dense) sélectionné")
-            optical_flow = optical_flow_Farneback.run_Farneback(cap,
-                                                                mask, 
-                                                                centering, 
-                                                                callback_progress, 
-                                                                callback_image)
-        case Algorithm.Megaflow:
-            #nécessite d'avoir généré les flux optiques avec le notebook "megaflow.ipynb" avant de lancer l'analyse
-            print("Algorithme Megaflow (dense) sélectionné")
-            run_megaflow(chemin_video, centering, callback_progress, callback_image)
-            optical_flow = np.load(os.path.join("outputs", video_name, algorithm.value, mask_name.value, centering.value, "optical_flow.npy"))
-    cap.release()
-    return optical_flow
+    cap_info = openVideo(chemin_video)
+    fps = cap_info.get(cv.CAP_PROP_FPS)
+    mask = None
+    if (mask_name != Mask.NoMask):
+        mask = createMask(cap_info, mask_name)
+    cap_info.release() 
+    
+    if algorithm != Algorithm.Megaflow:
+        cap = openVideo(chemin_video)
+        match algorithm:
+            case Algorithm.LucasKanade:
+                print("Algorithme Lucas-Kanade (sparse) sélectionné")
+                optical_flow = optical_flow_LK.run_LK(cap, mask, centering, callback_progress, callback_image)
+            case Algorithm.Farneback:
+                print("Algorithme Farneback (dense) sélectionné")
+                optical_flow = optical_flow_Farneback.run_Farneback(cap, mask, centering, callback_progress, callback_image)
+        
+        cap.release()
+        
+    else:
+        print("Algorithme Megaflow (dense) sélectionné")
+        run_megaflow(chemin_video, centering)
+        path_npy = os.path.join("outputs", video_name, algorithm.value, mask_name.value, centering.value, "optical_flow.npy")
+        optical_flow = np.load(path_npy)
+        
+    return optical_flow, fps
 
 def initAnalyse(video_name, algorithm, mask, centering, analyze):
     match analyze:

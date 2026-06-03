@@ -1,8 +1,10 @@
+from turtle import st
+
 import numpy as np
 import cv2 as cv
 from signal_processing.analyzer import *
-from utils.enums import Centering
 from .centering_processor import Centerer
+
 def run_Farneback(cap, mask, centering, callback_progress=None, callback_image=None):
     # Initialisation
     ret, frame = cap.read()
@@ -14,8 +16,6 @@ def run_Farneback(cap, mask, centering, callback_progress=None, callback_image=N
     previous_image = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
     hsv = np.zeros_like(frame)
     hsv[..., 1] = 255
-
-    M_transform = np.float32([[1, 0, 0], [0, 1, 0]])
     frames_data = []
     
     while True:
@@ -33,8 +33,17 @@ def run_Farneback(cap, mask, centering, callback_progress=None, callback_image=N
 
         frame_centered, mask_centered = centerer.apply(frame, fg_mask)
 
-        h, w = frame_centered.shape[:2]
         frame_gray = cv.cvtColor(frame_centered, cv.COLOR_BGR2GRAY)
+        
+        if previous_image.shape != frame_gray.shape:
+            print(f"ERREUR DE TAILLE : prev {previous_image.shape} vs next {frame_gray.shape}")
+        
+        try:
+            flow = cv.calcOpticalFlowFarneback(previous_image, frame_gray, None, 0.5, 3, 15, 3, 5, 1.2, 0)
+        except Exception as e:
+            print(f"Le calcul Farneback a crashé : {e}")
+            break 
+        
         flow = cv.calcOpticalFlowFarneback(previous_image, frame_gray, None, 0.5, 3, 15, 3, 5, 1.2, 0)
 
         mask_bool = mask_centered > 0

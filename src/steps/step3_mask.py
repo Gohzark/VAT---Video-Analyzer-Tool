@@ -4,7 +4,6 @@ import os
 from utils import enums
 
 def executer_etape3():
-    
     st.title("⚙️ Configuration du traitement")
     st.subheader("Étape 3 : Choix du masque")
         
@@ -31,24 +30,20 @@ def executer_etape3():
     # --- ALIGNEMENT DES BOUTONS ---
     col_b1, col_b2 = st.columns(2)
 
-    bouton_gris = (st.session_state.algorithm == enums.Algorithm.Megaflow) 
+    megaflow_chosen = (st.session_state.algorithm == enums.Algorithm.Megaflow) 
     
     with col_b1:
         if st.button("❌", key="btn_lk",use_container_width=True):
             st.session_state.mask = enums.Mask.NoMask
-            st.session_state.step = 4
-            st.rerun()
+            st.session_state.step_over = True
 
     with col_b2:
-        if st.button("🥽",disabled=bouton_gris, key="btn_fb", use_container_width=True):
+        if st.button("🥽",disabled=megaflow_chosen, key="btn_fb", use_container_width=True):
             st.session_state.mask = enums.Mask.MOG2
-            st.session_state.step = 4
-            st.rerun()
+            st.session_state.step_over = True
             
-    if (bouton_gris):
+    if (megaflow_chosen):
         st.warning("Le masque de mouvement n'est pas compatible avec l'algorithme Megaflow.")
         
-    st.write("---")
-    if st.button("⬅️ Étape précédente", use_container_width=True):
-        st.session_state.step = 2
-        st.rerun()
+    if st.session_state.step_over:
+        st.info(f"🎥 Masque sélectionné : `{st.session_state.mask.name}`")

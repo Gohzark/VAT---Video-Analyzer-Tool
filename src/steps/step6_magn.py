@@ -36,27 +36,21 @@ def executer_etape6():
             return
         np.save(path_magnitudes, magnitudes)
         st.success(f"Calcul terminé et enregistré dans : {path_magnitudes}")
-        st.session_state.calcul_magn_over = True
+        st.session_state.step_over = True
 
     # 🤖 LOGIQUE D'AFFICHAGE DES BOUTONS
     if os.path.exists(path_magnitudes):
         st.warning(f"⚠️ Le fichier `{path_magnitudes}` existe déjà.")
-
-        if st.button("🔥 Oui, recalculer et écraser", type="primary", use_container_width=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🔥 Oui, recalculer et écraser", type="primary", use_container_width=True):
                 lancer_le_calcul()
+            
+        with col2:
+            if st.button("❌ Non, conserver le résultat existant", use_container_width=True):
+                st.success("Résultat existant conservé. Vous pouvez passer à l'étape suivante.")
+                st.session_state.step_over = True
         
     else:
         if st.button("🚀 Lancer le calcul des magnitudes", use_container_width=True):
             lancer_le_calcul()
-
-    st.write("---")
-    col_b1, col_b2 = st.columns(2)
-    with col_b1:
-        if st.button("⬅️ Étape précédente", use_container_width=True):
-            st.session_state.step = 5
-            st.rerun()
-    with col_b2:
-        if st.session_state.get("calcul_magn_over") or os.path.exists(path_magnitudes):
-            if st.button("➡️ Étape suivante", use_container_width=True):
-                st.session_state.step = 7
-                st.rerun()

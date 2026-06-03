@@ -1,44 +1,55 @@
 import streamlit as st
 import os
-import time
-import signal_processing.optical_flow_processer as ofp
-import utils.enums as enums
+import subprocess
+import signal_processing.optical_flow_processer as ofp 
 import cv2 as cv
 
 def executer_etape1():
     st.title("Outil d'analyse de mouvement 📊")
-    st.subheader("Étape 1 : Chargement de la vidéo")
-    st.write("Bienvenue ! Pour commencer l'analyse de flux optique, veuillez téléverser un fichier vidéo.")
+    st.subheader("Étape 1 : Sélection de la vidéo (Kaggle Dataset)")
+    st.write("Bienvenue ! Veuillez choisir une vidéo parmi celles disponibles dans votre dataset Kaggle pour lancer l'analyse.")
 
-    fichier_charge = st.file_uploader("Choisir une vidéo...", type=["mp4"])
-    if fichier_charge is not None:
-        
-        barre_progression = st.progress(0, text="Sauvegarde du fichier sur le serveur...")
-        
-        os.makedirs("tmp", exist_ok=True)
-        chemin_video = os.path.join("tmp", fichier_charge.name)
-        
-        with open(chemin_video, "wb") as f:
-            f.write(fichier_charge.read())
+    # On initialise la liste des vidéos dans le session_state pour éviter de ré-interroger Kaggle à chaque clic
+    if "liste_videos_kaggle" not in st.session_state:
+        with st.spinner("🔍 Récupération de la liste des vidéos sur Kaggle..."):
+            try:
+                # Interroge l'API pour lister les fichiers du dataset
+                result = subprocess.run(
+                    ["kaggle", "datasets", "files", "tinodolbeau/opticalflow-videos"],
+                    capture_output=True, text=True, check=True
+                )
                 
-        for pourcentage in range(0, 101, 25):
-            time.sleep(0.1)
-            barre_progression.progress(pourcentage, text=f"Chargement : {pourcentage}%")
-        
-        barre_progression.empty()
-        st.success(f"✅ Fichier '{fichier_charge.name}' correctement chargé !")
-        
-        cap = ofp.openVideo("tmp/" + fichier_charge.name) 
-        st.session_state.fps = cap.get(cv.CAP_PROP_FPS)
-        cap.release()
-        
-        st.write("---")
-        if st.button("Passer au traitement ➡️", use_container_width=True):
-            st.session_state.video_path = chemin_video
-            st.session_state.step = 2
-            st.rerun()
-            
-        with st.expander("👀 Aperçu de la vidéo téléversée", expanded=True):
-            st.video(chemin_video)
+                # Le retour de Kaggle contient un tableau textuel. On filtre pour ne garder que les .mp4
+                lignes = result.stdout.split("\n")
+                fichiers_mp4 = []
+                for ligne in lignes:
+                    elements = ligne.split()
+                    if elements:
+                        nom_fichier = elements[0]
+                        if nom_fichier.endswith(".mp4"):
+                            fichiers_mp4.append(nom_fichier)
+                
+                st.session_state.liste_videos_kaggle = fichiers_mp4
+                
+            except Exception as e:
+                st.error(f"❌ Impossible de lister les fichiers du dataset Kaggle : {e}")
+                st.session_state.liste_videos_kaggle = []
 
+    liste_videos = st.session_state.liste_videos_kaggle
+
+    if not liste_videos:
+        st.warning("⚠️ Aucune vidéo au format .mp4 n'a été détectée ou trouvée dans votre dataset Kaggle.")
+        return
+
+    # sélecteur de vidéo
+    video_selectionnee = st.selectbox(
+        "Sélectionnez la vidéo à envoyer à Megaflow :",
+        options=liste_videos,
+        index=0
+    )
+
+    if video_selectionnee:
+        st.info(f"🎥 Vidéo sélectionnée pour le traitement : `{video_selectionnee}`")
+        st.session_state.video_path = video_selectionnee
+        st.session_state.step_over = True
         

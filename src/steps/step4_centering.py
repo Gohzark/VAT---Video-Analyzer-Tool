@@ -5,6 +5,9 @@ from utils import enums
 
 def executer_etape4():
     
+    st.session_state.last_step = 3
+    st.session_state.next_step = 5
+
     st.info(f"Vidéo active : `{os.path.basename(st.session_state.video_path)}`")
     st.info(f"Algorithme sélectionné : `{st.session_state.algorithm.name}`")
     st.info(f"Masque sélectionné : `{st.session_state.mask.name}`")
@@ -37,30 +40,25 @@ def executer_etape4():
     # --- ALIGNEMENT DES BOUTONS ---
     col_b1, col_b2, col_b3 = st.columns(3)
 
-    bouton_gris = (st.session_state.algorithm == enums.Algorithm.Megaflow) 
+    megaflow_chosen = (st.session_state.algorithm == enums.Algorithm.Megaflow) 
     
     with col_b1:
         if st.button("🖼️", key="btn_lk",use_container_width=True):
             st.session_state.centering = enums.Centering.NoCentering
-            st.session_state.step = 5
-            st.rerun()
+            st.session_state.step_over = True
 
     with col_b2:
-        if st.button("🦤",disabled=bouton_gris, key="btn_fb", use_container_width=True):
+        if st.button("🦤",disabled=megaflow_chosen, key="btn_fb", use_container_width=True):
             st.session_state.centering = enums.Centering.ExponentialMovingAverage
-            st.session_state.step = 5
-            st.rerun()
+            st.session_state.step_over = True
             
     with col_b3:
-        if st.button("🦅",disabled=bouton_gris, key="btn_kalman", use_container_width=True):
+        if st.button("🦅",disabled=megaflow_chosen, key="btn_kalman", use_container_width=True):
             st.session_state.centering = enums.Centering.Kalman
-            st.session_state.step = 5
-            st.rerun()
+            st.session_state.step_over = True
             
-    if (bouton_gris):
+    if (megaflow_chosen):
         st.warning("Le centrage n'est pas compatible avec l'algorithme Megaflow.")
         
-    st.write("---")
-    if st.button("⬅️ Étape précédente", use_container_width=True):
-        st.session_state.step = 3
-        st.rerun()
+    if st.session_state.step_over:
+        st.info(f"🎥 Centrage sélectionné : `{st.session_state.centering.name}`")
