@@ -63,8 +63,7 @@ def getOpticalFlow(chemin_video, algorithm, mask_name, centering, callback_progr
     else:
         print("Algorithme Megaflow (dense) sélectionné")
         run_megaflow(chemin_video, centering)
-        path_npy = os.path.join("outputs", video_name, algorithm.value, mask_name.value, centering.value, "optical_flow.npy")
-        optical_flow = np.load(path_npy)
+        return None, fps
         
     return optical_flow, fps
 

@@ -1,4 +1,6 @@
 from functools import partial
+import shutil
+import subprocess
 from signal_processing.optical_flow_processer import getOpticalFlow
 import numpy as np
 import cv2 as cv
@@ -39,7 +41,7 @@ def executer_etape5():
     def lancer_le_calcul():
         # Indicateur de démarrage pour vérifier que le bouton déclenche bien l'action
         st.info("Démarrage du calcul du flux optique...")
-        barre_progression = st.progress(0, text="Analyse en cours...")
+        barre_progression = st.progress(0, text="Traitement en cours...")
         print("[step5] lancer_le_calcul appelé")
                 
         # Vérifier l'existence du fichier temporaire avant d'appeler la fonction
@@ -66,23 +68,29 @@ def executer_etape5():
             st.error(f"Erreur durant le calcul du flux optique : {e}")
             return
      
-        # 💡 On vérifie que tout est OK avant de toucher à la session
-        if res_flow is not None and res_fps is not None:
-            os.makedirs(dossier_sortie, exist_ok=True)
-            np.save(path_optical_flow, res_flow)
-            
-            # ✅ Enregistrement propre et groupé dans le session_state
-            st.session_state.fps = res_fps
-            st.session_state.calcul_optical_flow_over = True
-            st.session_state.step = 6
-            st.session_state.step_over = True
-            
-            barre_progression.empty()
-            st.success(f"Calcul terminé et enregistré dans : {path_optical_flow}")
-            st.rerun() # Optionnel : force le rafraîchissement pour l'étape 6
-            
+        if st.session_state.algorithm.name == "Megaflow":
+            if res_fps is not None:
+                st.session_state.fps = res_fps
+                barre_progression.empty()
+                st.success("🚀 Paramètres envoyés avec succès à Kaggle ! Suis les instructions ci-dessous pour lancer le calcul.")
+                st.rerun()
+            else:
+                st.error("Impossible de récupérer les FPS de la vidéo pour initialiser Megaflow.")
+        
         else:
-            st.error("Le calcul a échoué (Données de flux ou FPS manquantes).")
+            if res_flow is not None and res_fps is not None:
+                os.makedirs(dossier_sortie, exist_ok=True)
+                np.save(path_optical_flow, res_flow)
+                
+                st.session_state.fps = res_fps
+                st.session_state.calcul_optical_flow_over = True
+                st.session_state.step_over = True
+                
+                barre_progression.empty()
+                st.success(f"Calcul terminé et enregistré dans : {path_optical_flow}")
+                st.rerun()
+            else:
+                st.error("Le calcul a échoué (Données de flux ou FPS manquantes).")
 
     # 🤖 LOGIQUE D'AFFICHAGE DES BOUTONS
     if os.path.exists(path_optical_flow):
@@ -103,3 +111,28 @@ def executer_etape5():
         # Le fichier n'existe pas : on affiche le bouton de lancement normal
         if st.button("🚀 Lancer l'analyse du flux optique", use_container_width=True):
             lancer_le_calcul()
+            
+    if st.session_state.algorithm.name == "Megaflow" and not st.session_state.step_over:
+        st.write("---")
+        st.info("⚡ Pour l'algorithme MEGAFLOW, le calcul du flux optique est effectué sur Kaggle. CLiquez sur le bouton au dessus pour passer les paramètres au notebook sur Kaggle. Puis, ouvrez le lien ci-dessous, lancez le notebook, puis revenez ici pour récupérer les résultats une fois le calcul terminé (généralement quelques dizaines de minutes).")
+        st.info("🔗 [Lien vers le notebook Kaggle MEGAFLOW](https://www.kaggle.com/code/tinodolbeau/megaflow)")
+        if st.button("📥 Télécharger le flux depuis Kaggle", use_container_width=True, type="primary"):
+            with st.spinner("Téléchargement et nettoyage..."):
+                try:
+                    # On lance la commande de download directement
+                    subprocess.run([
+                        "kaggle", "kernels", "output", "tinodolbeau/megaflow", "-p", dossier_sortie
+                    ], check=True, stdout=subprocess.DEVNULL)
+                    
+                    # Petit nettoyage rapide des fichiers parasites (assets, etc.)
+                    for item in os.listdir(dossier_sortie):
+                        chemin_item = os.path.join(dossier_sortie, item)
+                        if item != "optical_flow.npy":
+                            if os.path.isdir(chemin_item): shutil.rmtree(chemin_item)
+                            else: os.remove(chemin_item)
+                    
+                    st.success("🎉 Flux optique récupéré avec succès !")
+                    st.session_state.calcul_optical_flow_over = True
+                    st.session_state.step_over = True
+                except Exception as e:
+                    st.error(f"Fichier introuvable. Erreur : {e}")
