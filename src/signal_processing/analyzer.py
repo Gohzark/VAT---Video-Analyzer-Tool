@@ -8,32 +8,25 @@ import matplotlib.pyplot as plt
 from scipy.ndimage import minimum_filter
 from utils.enums import Algorithm, Analyze, Mask, Centering
 
-#TODO: Réparer ce merdier
-
 class Analyzer():
     video_name: str
-    image_width: int
-    image_height: int
-    analyze: Analyze
     threshold: float
     algorithm: Algorithm
     mask: Mask
     centering: bool
-
+    analyze: Analyze
+    output_dir: str
+    
     def __init__(
         self,
         video_name: str,
-        height: int,
-        width: int,
         algorithm: Algorithm,
         mask: Mask,
+        centering: Centering,
         analyze: Analyze,
-        centering: bool,
         threshold: float = 0.2,
     ):
         self.video_name = video_name
-        self.image_height = height
-        self.image_width = width
         self.algorithm = algorithm
         self.analyze = analyze
         self.mask = mask
@@ -45,16 +38,6 @@ class Analyzer():
             centering = True
         self.threshold = threshold
 
-
-    def detectMovements(self, fps: float) -> None:
-        magnitudes = np.load(os.path.join("outputs", self.video_name, self.algorithm.value, "magnitudes.npy"))
-        match self.analyze:
-            case Analyze.FastFourierTransformation:
-                self._detectFFT(magnitudes, fps)
-            case Analyze.Sliding:
-                self._detectBySliding(magnitudes, fps)
-            case Analyze.StartStop:
-                self._detectStartStop(magnitudes, fps)
         
         
     def _detectStartStop(self, magnitudes: np.ndarray, fps: float) -> None:
@@ -128,14 +111,13 @@ class Analyzer():
         amp_pic       = amplitudes[mask][idx_pic]
         ratio = round(float(amp_pic) / float(np.mean(amplitudes[mask])), 2)
     
-        self._plotEvolution(magnitudes, fps)
         self._writeResults({
             "periode_sec": round(1 / frequence_dom, 2),
             "frequence_hz": frequence_dom,
             "ratio" : ratio,
             "nb_cycles_mouvement": round(len(magnitudes) / fps * frequence_dom, 2),
-            "plot_fft": os.path.join(self._plot_dir()+"/plot_fft.png"),
-            "plot_evolution": os.path.join(self._plot_dir()+"/plot_evolution.png"),
+            "plot_fft": os.path.join(self._plot_dir(), self.analyze.value, "plot_fft.png"),
+            "plot_evolution": os.path.join(self._plot_dir(), self.analyze.value, "plot_evolution.png"),
         })
         
     def _plotFFT(self, freqs_pos: np.ndarray, amplitudes: np.ndarray) -> None:
@@ -146,7 +128,9 @@ class Analyzer():
         ax.set_title("Spectre FFT")
         ax.grid(True, alpha=0.3)
         plt.tight_layout()
-        plt.savefig(self._plot_dir()+"/plot_fft.png", dpi=150)
+        dir = self._plot_dir()
+        os.makedirs(os.path.dirname(dir), exist_ok=True)
+        plt.savefig(dir , dpi=150)        
         plt.close()
     
     
@@ -179,7 +163,6 @@ class Analyzer():
 
         if best_gap > 0:
             periode = best_gap / fps
-            self._plotEvolution(magnitudes, fps)
             self._writeResults({
                 "periode_sec": round(periode, 2),
                 "frequence_hz": round(1 / periode, 2),
@@ -209,26 +192,13 @@ class Analyzer():
         with open(file_path, "w", encoding="utf-8") as f:
             json.dump(results, f, indent=4, ensure_ascii=False)
 
-    def _plotEvolution(self, magnitudes: list, fps: float) -> None:
-        fig, ax = plt.subplots(figsize=(10, 4))
-        t = np.linspace(0, len(magnitudes) / fps, len(magnitudes))
-        ax.plot(t, magnitudes, color='blue', label='Magnitude du mouvement')
-        ax.set_title("Évolution du mouvement")
-        ax.set_xlabel("Temps (s)")
-        ax.set_ylabel("Magnitude")
-        ax.legend()
-        plt.tight_layout()
-        plt.savefig(self._plot_dir() + "/plot_evolution.png", dpi=150)
-        plt.close()
-
     def _plot_dir(self) -> str:
         path = os.path.join(
             self.output_dir,
             self.video_name,
             self.algorithm.value,
-            self.analyze.value,
             self.mask.value,
-            self.centering.value
+            self.centering.value,
         )
         os.makedirs(path, exist_ok=True)
         return path

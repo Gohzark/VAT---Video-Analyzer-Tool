@@ -1,34 +1,11 @@
 import cv2 as cv
 import argparse
-from signal_processing.analyzer import Analyzer
-import optical_flow_estimation.optical_flow_Farneback as optical_flow_Farneback
-import optical_flow_estimation.optical_flow_LK as optical_flow_LK
-from signal_processing.optical_flow_processing import flow_to_magnitudes
+from signal_processing.optical_flow_processer import flow_to_magnitudes
 from utils.enums import Algorithm, Mask, Analyze, Centering
-from utils.helpers import openVideo, createMask
+from signal_processing.optical_flow_processer import openVideo, createMask, getSignal, initAnalyse
 
 
-def initAnalyse(analyze, video_name, height, width, algorithm, mask, centering):
-    match analyze:
-        case Analyze.FastFourierTransformation:
-            print("Analyse par FFT sélectionnée")
-        case Analyze.StartStop:
-            print("Analyse StartStop sélectionnée")
-        case Analyze.Sliding:
-            print("Analyse par décalage du signal sélectionnée")
-    return Analyzer(video_name, height, width, algorithm, mask, analyze, centering)
-        
-def getSignal(cap, algorithm, mask, centering):
-    match algorithm:
-        case Algorithm.LucasKanade:
-            print("Algorithme Lucas-Kanade (sparse) sélectionné")
-            optical_flow_LK.run_LK(cap, mask, cap.get(cv.CAP_PROP_FRAME_WIDTH), cap.get(cv.CAP_PROP_FRAME_HEIGHT))
-        case Algorithm.Farneback:
-            print("Algorithme Farneback (dense) sélectionné")
-            optical_flow_Farneback.run_Farneback(cap, mask, centering)
-        case Algorithm.Megaflow:
-            #nécessite d'avoir généré les flux optiques avec le notebook "megaflow.ipynb" avant de lancer l'analyse
-            print("Algorithme Megaflow (dense) sélectionné")
+
             
 def main(args):
     cap = openVideo("resources/" + args.video)
