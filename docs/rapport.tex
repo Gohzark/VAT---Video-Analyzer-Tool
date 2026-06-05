@@ -1,0 +1,115 @@
+\documentclass[12pt, letterpaper]{article}
+
+\usepackage{booktabs} 
+\usepackage{array}    
+\usepackage{graphicx}
+\usepackage[colorlinks=true, linkcolor=blue, urlcolor=blue]{hyperref}
+\usepackage[french]{babel}
+\usepackage{pgfgantt}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc} 
+\usepackage[top=1.8cm, bottom=1.8cm, left=2.5cm, right=2.5cm]{geometry}
+\usepackage{float}
+
+
+
+\graphicspath{{outputs/}}
+
+\title{Analyse de mouvement humain par ordinateur\\ Rapport de stage de Master 1}
+
+\author{Dolbeau Tino}
+\date{Juin 2026}
+
+\begin{document}
+
+\setlength{\abovecaptionskip}{0pt}
+\setlength{\belowcaptionskip}{0pt}
+
+\maketitle
+
+\tableofcontents
+\newpage
+
+\section{Introduction}
+
+La vision par ordinateur est un domaine de l'intelligence artificielle dont l'essor a été fulgurant au cours de la dernière décennie. 
+Portée par la montée en puissance du deep learning et la démocratisation des données, elle a connu des avancées considérables, des réseaux convolutifs aux architectures plus récentes à base de transformers, 
+permettant d'atteindre des performances toujours plus élevées sur des tâches autrefois inaccessibles aux machines. 
+Ces progrès ont ouvert la voie à des applications concrètes dans des domaines aussi variés que l'analyse du mouvement humain en sport et en rééducation, 
+la conduite autonome, le contrôle qualité industriel ou encore la surveillance et la sécurité. 
+Au-delà de la simple analyse d'images statiques, c'est la compréhension des séquences vidéo qui concentre aujourd'hui une part croissante des travaux de recherche. 
+L'estimation du flux optique, qui consiste à caractériser le mouvement apparent entre deux images consécutives, constitue à cet égard une brique fondamentale, permettant d'extraire une information temporelle riche à partir de données visuelles brutes. 
+
+C'est dans ce cadre que s'inscrit ce stage en computer vision.
+L'objectif principal de ce stage est d'explorer et d'évaluer différentes méthodes d'étude du mouvement, en particulier à travers l'estimation du flux optique, afin de mieux comprendre les forces et les limites de ces approches appliquées à des vidéos de sport et de danse. 
+L'enjeu était ensuite d'en extraire des informations quantitatives pertinentes, telles que la fréquence d'exécution des mouvements.
+
+\input{etat_de_lart}
+
+\bibliographystyle{plain}
+\bibliography{references}  
+
+\section{Travaux réalisés}
+
+\subsection{Planning des missions réalisées}
+
+\begin{figure}[htbp]
+\centering
+\resizebox{\textwidth}{!}{
+    \begin{ganttchart}[
+        vgrid, hgrid, % Affiche le quadrillage vertical et horizontal
+        x unit=1cm,  % Largeur d'une colonne (ajustable)
+        y unit title=0.7cm,
+        y unit chart=0.7cm,
+        title label font=\footnotesize\bfseries,
+        canvas/.style={draw=black, line width=0.5pt},
+        bar/.style={draw=blue!70!black, fill=blue!30, rounded corners=2pt},
+        bar height=0.6,
+        group left shift=0.1, 
+        group right shift=-0.1,
+        group right shift=0, group top shift=.6, group peaks tip position=0,
+        group/.style={draw=black, fill=black!70},
+        milestone/.style={draw=red!70!black, fill=red!40},
+        group label font=\footnotesize\bfseries,
+        bar label font=\footnotesize
+    ]{1}{8}
+
+        \gantttitle{Planification du Projet (Semaines)}{8} \\
+        \gantttitlelist{1,...,8}{1} \\
+
+        \ganttbar{Initiation au flux optique}{1}{1} \\
+        \ganttbar{Mise en place de l'environnement de travail}{1}{1} \\
+        \ganttbar{Recherche bibliographique}{1}{2} \\
+
+        \ganttbar{Test des technologies \& Développement d'algorithmes de traitement}{2}{7} \\
+        \ganttbar{Création de l'interface Streamlit}{6}{7} \\
+        
+        \ganttbar{Documentation \& tests finaux}{8}{8} \\
+
+    \end{ganttchart}
+}
+\caption{Diagramme de Gantt prévisionnel des tâches du projet.}
+\label{fig:gantt}
+\end{figure}
+
+\subsection{Méthodologie d'étude}   
+
+Afin de mener à bien ce projet, une méthodologie rigoureuse a été adoptée.
+Cette méthodologie est basée sur une approche itérative en cycles d'étude et est structurée en plusieurs étapes clés.
+Dans un premier temps, il s'agissait de définir clairement un objectif de recherche précis, puis de proposer un protocole de développement adapté à la résolution de ce problème.
+Ensuite, la mise en œuvre de ce protocole menait à une phase d'expérimentation aboutissant à l'obtention de résultats concrets.
+Pour finir ces résultats ont été analysés pour en tirer des conclusions pertinentes qui pouvait mener à des perspectives d'amélioration pour de futurs travaux et ainsi permettre 
+de démarrer un nouveau cycle d'étude.
+
+\subsection{Expérimentations et résultats}
+
+\section{Conclusion}
+
+\subsection{Enseignements personnels}
+
+\subsection{Perspectives}
+
+\subsection{Annexes}
+
+
+\end{document}

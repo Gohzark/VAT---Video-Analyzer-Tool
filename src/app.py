@@ -44,6 +44,16 @@ if "centering" not in st.session_state:
 if "analysis" not in st.session_state:
     st.session_state.analysis = None
     
+# --- SÉCURITÉ FPS GLOBALE ---
+# Si une vidéo est chargée mais que les FPS ont sauté au rechargement (fichiers déjà existants)
+if st.session_state.video_path and (st.session_state.fps is None or st.session_state.fps == 0):
+    video_tmp_path = "tmp/" + os.path.basename(st.session_state.video_path)
+    if os.path.exists(video_tmp_path):
+        import cv2 as cv
+        video = cv.VideoCapture(video_tmp_path)
+        st.session_state.fps = video.get(cv.CAP_PROP_FPS)
+        video.release()
+    
 # --- ROUTEUR D'ÉTAPES ---
 if st.session_state.step == 1:
     executer_etape1()
@@ -70,7 +80,6 @@ st.write("---")
 col_b1, col_b2 = st.columns(2)
 with col_b1:
     if st.button("⬅️ Étape précédente", use_container_width=True):
-        st.session_state.step_over = True
         if st.session_state.step == 5 and st.session_state.algorithm == enums.Algorithm.Megaflow:
             st.session_state.step = 2
         else:

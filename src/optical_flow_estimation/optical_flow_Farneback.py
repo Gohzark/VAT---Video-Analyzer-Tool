@@ -64,6 +64,5 @@ def run_Farneback(cap, mask, centering, callback_progress=None, callback_image=N
         if callback_image:
             callback_image(img)
 
-    cv.destroyAllWindows()
     print("Terminé.")
     return np.array(frames_data)

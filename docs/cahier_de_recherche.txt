@@ -312,3 +312,14 @@ Etude 3 :
     Objectif : 
 
         Explorer des pistes de technologies plus récentes que Farneback pour capturer le mouvement.
+
+
+Étude 8 :
+
+    Objectif : 
+        
+        Faire en sorte que Sliding ne choisisse pas les harmoniques qui auraient un erreur plus basse que la période simple.
+
+    Protocole :
+
+        Méthode du First Local minimum

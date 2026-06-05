@@ -3,6 +3,10 @@ import json
 import os
 import argparse
 
+
+# Pour ajouter des labels, télécharger le fichier data.json depuis https://www.kaggle.com/datasets/tinodolbeau/opticalflow-videos.
+# Placer le à la racine du projet puis exécuter ce script.
+# Ensuite mettez la nouvelle version de data.json sur kaggle.
 def get_video_info(video_path):
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
@@ -55,7 +59,6 @@ if __name__ == "__main__":
     parser.add_argument("--output", type=str, default="resources/data.json", help="Fichier JSON de sortie")
 
     args = parser.parse_args()
-    args.video = "resources/" + args.video
     
     # 1. Vérifier si la vidéo existe
     if not os.path.exists(args.video):

@@ -1,0 +1,174 @@
+% ------------------------------------------------------------
+% État de l'art
+% ------------------------------------------------------------
+\section{État de l'art}
+
+Sans prétendre à l'exhaustivité, cet état de l'art présente les méthodes les plus 
+pertinentes et les plus répandues pour l'analyse du mouvement humain en vidéo, 
+susceptibles d'être employées dans le cadre de ce stage. Il couvre la soustraction 
+de fond, l'estimation du flux optique, le suivi de points, la segmentation vidéo, 
+et le traitement du signal pour l'analyse de périodicité.
+
+\subsection{Soustraction de fond (\textit{Background Subtraction})}
+
+La soustraction de fond est une étape de pré-traitement qui vise à isoler les pixels correspondant à un objet en mouvement par rapport à un fond supposé statique. Elle permet de réduire le bruit dans les étapes suivantes --- le calcul du flux optique notamment --- en masquant les zones non pertinentes.
+
+\subsubsection{MOG2 --- \textit{Mixture of Gaussians v2}}
+
+MOG2 est l'algorithme de soustraction de fond le plus utilisé en pratique. Il modélise l'intensité de chaque pixel par un mélange de gaussiennes dont les paramètres sont mis à jour à chaque image. L'idée centrale est qu'un pixel de fond peut légitimement varier (végétation, variations d'éclairage)~: plutôt que de comparer à une valeur fixe, on compare à une distribution apprise. Le paramètre \texttt{varThreshold} contrôle la sensibilité~: une valeur élevée ne détecte que les écarts nets, réduisant les faux positifs dus aux micro-mouvements parasites. MOG2 intègre également une phase de \textit{warm-up} pendant laquelle le fond est estimé avant de commencer la détection effective.
+
+\medskip
+\noindent\textbf{Points forts~:} robuste aux variations lentes d'éclairage, intégré nativement à OpenCV, paramétrage simple.\\
+\textbf{Limites~:} temps d'initialisation nécessaire, peu adapté aux changements brusques de fond ou aux scènes très dynamiques.
+
+\subsubsection{ViBe --- \textit{Video Background Estimation}}
+
+ViBe est une alternative à MOG2 proposée par Barnich et Van Droogenbroeck~\cite{barnich2011vibe}. Au lieu de modéliser chaque pixel par des statistiques, il maintient un échantillon de valeurs historiques pour chaque pixel. Un nouveau pixel est classifié comme fond si sa valeur est proche d'au moins $N$ valeurs de son échantillon (critère de proximité spatiale configurable). L'algorithme est remarquablement réactif~: il converge dès la deuxième image, là où MOG2 nécessite plusieurs dizaines d'images.
+
+\medskip
+\noindent\textbf{Points forts~:} initialisation quasi-instantanée, très efficace sur les objets entrant brusquement dans le champ.\\
+\textbf{Limites~:} moins robuste que MOG2 aux variations lentes et progressives du fond~; non intégré à OpenCV (implémentation tierce requise).
+
+\subsubsection*{Comparaison}
+
+\begin{table}[h]
+\centering
+\caption{Comparaison des méthodes de soustraction de fond}
+\label{tab:bg_subtraction}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Critère} & \textbf{MOG2} & \textbf{ViBe} \\
+\midrule
+Temps d'initialisation      & $\sim$30 images & 1--2 images \\
+Robustesse aux variations lentes & Bonne    & Faible      \\
+Réactivité aux nouveaux objets   & Moyenne  & Excellente  \\
+Disponibilité (OpenCV)           & Native   & Tierce      \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ------------------------------------------------------------
+\subsection{Flux optique (\textit{Optical Flow})}
+
+Le flux optique est la représentation du champ de déplacement apparent des pixels entre deux images consécutives. Pour chaque pixel $(x, y)$, on associe un vecteur $(u, v)$ indiquant son déplacement estimé. C'est la brique centrale de ce projet~: la magnitude de ce champ, agrégée sur les zones d'intérêt, constitue le signal analysé pour détecter la périodicité.
+
+\subsubsection{Lucas-Kanade --- flux optique \textit{sparse} (1981)}
+
+L'approche de Lucas-Kanade~\cite{lucas1981iterative} est dite \textit{sparse}~: elle ne calcule le flux que pour un sous-ensemble de points d'intérêt détectés au préalable (par exemple avec l'algorithme de Shi-Tomasi). Pour chaque point, le déplacement est estimé par moindres carrés dans une fenêtre locale, en supposant que les pixels voisins se déplacent de façon cohérente. L'implémentation pyramidale gère les grands déplacements en traitant d'abord les basses résolutions.
+
+\medskip
+\noindent\textbf{Points forts~:} rapide, robuste sur les coins et textures, très adapté au suivi de points caractéristiques.\\
+\textbf{Limites~:} ne couvre pas les zones uniformes (pas de points d'intérêt détectables), sensible aux occultations.
+
+\subsubsection{Farneback --- flux optique dense (2003)}
+
+L'algorithme de Farneback~\cite{farneback2003two} calcule un vecteur de déplacement pour chaque pixel de l'image (\textit{dense}). Il approxime localement chaque image par un polynôme quadratique, puis estime le déplacement en comparant les coefficients de ces polynômes entre les deux images. Il produit un tenseur de forme $(H \times W \times 2)$ représentant le champ de déplacement complet.
+
+\medskip
+\noindent\textbf{Points forts~:} couverture totale de l'image, bon compromis précision/vitesse pour des séquences à déplacements modérés.\\
+\textbf{Limites~:} sensible au bruit et aux grandes zones uniformes, peut produire des vecteurs incohérents sans masque de fond.
+
+\subsubsection{RAFT --- \textit{Recurrent All-Pairs Field Transforms} (2020)}
+
+RAFT~\cite{teed2020raft} est une méthode d'apprentissage profond qui a établi de nouveaux scores de référence sur les benchmarks standards du flux optique (Sintel, KITTI). Son architecture repose sur trois étapes~: extraction de features par CNN, construction d'un volume de corrélation 4D comparant toutes les paires de pixels entre les deux images, et raffinement itératif par un réseau GRU. RAFT est aujourd'hui la référence à partir de laquelle la plupart des méthodes récentes se comparent.
+
+\medskip
+\noindent\textbf{Points forts~:} très haute précision sur les benchmarks, bonne gestion des grands déplacements.\\
+\textbf{Limites~:} coût computationnel important, nécessite un GPU, non adapté au temps-réel.
+
+\subsubsection{GMA --- \textit{Global Motion Aggregation} (2021)}
+
+GMA~\cite{jiang2021learning} est une amélioration de RAFT qui ajoute un mécanisme d'attention globale (inspiré des Transformers) à l'étape de raffinement. L'intuition est que dans les zones occluses ou uniformes, l'information locale est insuffisante~: l'attention permet de propager l'information depuis des régions contextuellement similaires ailleurs dans l'image. GMA améliore les résultats de RAFT dans les zones difficiles (occultations, grandes surfaces unies).
+
+\medskip
+\noindent\textbf{Points forts~:} meilleure précision que RAFT sur les zones uniformes et les occultations.\\
+\textbf{Limites~:} mêmes contraintes computationnelles que RAFT.
+
+\subsubsection{MegaFlow (2025)}
+
+MegaFlow~\cite{zhang2025megaflow} est une méthode récente basée sur une architecture \textit{Transformer} complète, s'appuyant sur les représentations apprises par DINOv2 --- un modèle de vision pré-entraîné par auto-supervision sur des milliards d'images. Elle est conçue spécifiquement pour les grands déplacements (\textit{large displacement}), cas problématique pour RAFT et GMA. Grâce à la richesse sémantique des features DINOv2, le flux produit est nettement moins bruité sur les surfaces uniformes telles qu'un vêtement ou la peau~: des pixels appartenant au même membre reçoivent des vecteurs cohérents et fluides, là où les méthodes précédentes produisent des estimations localement incohérentes.
+
+MegaFlow produit également un score de confiance par pixel (compris entre 0 et 1), utilisable pour filtrer les vecteurs peu fiables~: une valeur proche de 1 indique une correspondance sûre, proche de 0 un pixel probablement occulté ou sorti du champ.
+
+\medskip
+\noindent\textbf{Points forts~:} meilleurs scores sur les benchmarks à grands déplacements, flux visuellement cohérent sur les surfaces homogènes, score de confiance par pixel, utilisable directement sans ré-entraînement (\textit{zero-shot}).\\
+\textbf{Limites~:} modèle lourd nécessitant un GPU, non adapté au temps-réel.
+
+\subsubsection*{Comparaison}
+
+\begin{table}[h]
+\centering
+\caption{Comparaison des méthodes de flux optique}
+\label{tab:optical_flow}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Méthode} & \textbf{Type} & \textbf{Précision} & \textbf{Grands dépl.} & \textbf{Temps-réel} \\
+\midrule
+Lucas-Kanade & Sparse     & Faible    & Non      & Oui \\
+Farneback    & Dense      & Moyenne    & Non      & Oui \\
+RAFT         & Dense (DL) & Haute      & Partielle & Non \\
+GMA          & Dense (DL) & Très haute & Partielle & Non \\
+MegaFlow     & Dense (DL) & Très haute & Oui      & Non \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ------------------------------------------------------------
+\subsection{Suivi de points (\textit{Point Tracking})}
+
+Le suivi de points consiste à suivre la trajectoire de pixels ou régions d'intérêt sur l'ensemble d'une vidéo, là où le flux optique ne traite que des paires d'images consécutives. C'est pertinent pour analyser des mouvements sur plusieurs cycles complets.
+
+\subsubsection{Track4World}
+
+Track4World~\cite{karaev2023cotracker} est une méthode basée sur des Transformers qui suit des points sur de longues séquences en exploitant les corrélations entre les trajectoires simultanées. Track4World est une variante dédiée aux séquences longues filmées en conditions réelles. Ces méthodes gèrent naturellement les occultations partielles en maintenant une représentation latente de chaque point même quand il disparaît temporairement du champ.
+
+\medskip
+\noindent\textbf{Points forts~:} suivi long terme, gestion des occultations, précision sur les séquences longues.\\
+\textbf{Limites~:} modèle lourd nécessitant un GPU, complexité d'intégration.
+
+% ------------------------------------------------------------
+\subsection{Segmentation vidéo}
+
+La segmentation permet d'isoler précisément le sujet d'intérêt du reste de la scène, en produisant un masque binaire par pixel, plus précis que la soustraction de fond classique.
+
+\subsubsection{SAM2 --- \textit{Segment Anything Model v2} (Meta, 2024)}
+
+SAM2~\cite{ravi2024sam2} est l'extension vidéo du modèle SAM. Après avoir indiqué l'objet à suivre dans une image (par un clic ou une boîte englobante), SAM2 propage ce masque de segmentation à toutes les images suivantes de la vidéo, en s'appuyant sur une mémoire temporelle. Il produit des masques précis à l'échelle du pixel, même dans des conditions d'occultation partielle.
+
+\medskip
+\noindent\textbf{Points forts~:} segmentation précise, propagation temporelle robuste, initialisation par simple interaction utilisateur.\\
+\textbf{Limites~:} initialisation manuelle requise, modèle lourd, non adapté au temps-réel.
+
+\subsubsection{MatAnyone2 (2025)}
+
+MatAnyone2~\cite{ye2025matanyone} est une méthode d'extraction de sujet vidéo qui va plus loin que la segmentation binaire~: elle produit une carte d'opacité à valeurs continues entre 0 et~1, permettant de gérer proprement les zones semi-transparentes (cheveux, bords flous). Particulièrement utile lorsque la précision du masque aux bords du sujet est critique pour l'analyse.
+
+% ------------------------------------------------------------
+\subsection{Détection de périodicité dans le signal}
+
+Une fois le signal de magnitude du flux optique extrait, plusieurs approches classiques permettent d'en analyser la périodicité.
+
+\subsubsection{Transformée de Fourier rapide (FFT)}
+
+La FFT décompose le signal temporel en ses composantes fréquentielles. La fréquence dominante du spectre correspond directement à la fréquence de répétition du mouvement. C'est l'approche la plus rigoureuse mathématiquement, à condition que le signal soit suffisamment long et régulier pour que le spectre soit bien défini.
+
+% ------------------------------------------------------------
+\subsection{Frameworks et outils}
+
+\begin{table}[h]
+\centering
+\caption{Principaux outils utilisés dans le domaine}
+\label{tab:frameworks}
+\begin{tabular}{ll}
+\toprule
+\textbf{Outil} & \textbf{Rôle} \\
+\midrule
+OpenCV              & Vision par ordinateur classique (flux optique, soustraction de fond) \\
+OpenMMLab           & Écosystème modulaire (MMFlow, MMPose, MMTracking) \\
+PyTorch             & Boîte à outils pour les méthodes d'apprentissage profond \\
+HuggingFace Hub     & Distribution des modèles pré-entraînés \\
+NumPy / SciPy       & Traitement du signal (FFT, filtrage) \\
+\bottomrule
+\end{tabular}
+\end{table}
+

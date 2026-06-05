@@ -12,10 +12,15 @@ def get_fg_mask(frame, mask_option):
 def run_LK(cap, mask_option, centering, callback_progress=None, callback_image=None):
     image_width = int(cap.get(cv.CAP_PROP_FRAME_WIDTH))
     image_height = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
+    
+    if not cap.isOpened():
+        print("Erreur : Impossible d'ouvrir le flux vidéo.")
+        return np.empty((0, image_height, image_width, 2))
+
     ret, old_frame = cap.read()
     if not ret or old_frame is None:
-        print("Erreur : La première image est vide ou la fin du fichier est atteinte.")
-        exit()
+        print("Erreur : La première image est vide.")
+        return np.empty((0, image_height, image_width, 2))
         
     total_frames = int(cap.get(cv.CAP_PROP_FRAME_COUNT))
     centerer = Centerer(centering, has_mask=(mask_option is not None))
@@ -25,7 +30,6 @@ def run_LK(cap, mask_option, centering, callback_progress=None, callback_image=N
 
     color = np.random.randint(0, 255, (100, 3))
     
-    # Centrage de la première frame
     if mask_option is not None:
         fg_mask_init = mask_option.apply(old_frame)
     else:
@@ -41,7 +45,6 @@ def run_LK(cap, mask_option, centering, callback_progress=None, callback_image=N
     while True:
         ret, frame = cap.read()
         if not ret:
-            print("Fin de la vidéo ou erreur de lecture.")
             break
 
         if mask_option is not None:
@@ -54,15 +57,14 @@ def run_LK(cap, mask_option, centering, callback_progress=None, callback_image=N
 
         good_new, good_old = np.empty((0, 2)), np.empty((0, 2))
 
+        current_flow = np.zeros((image_height, image_width, 2), dtype=np.float32)
+
         if p0 is None or len(p0) == 0:
-            fg_mask = get_fg_mask(frame, mask_option)
+            fg_mask_c = get_fg_mask(frame_c, mask_option)
             p0 = cv.goodFeaturesToTrack(frame_gray, mask=fg_mask_c, **feature_params)
             if p0 is None:
-                frames_data.append((0.0, 0.0))
-                cv.imshow('frame', frame)
+                frames_data.append(current_flow) 
                 old_gray = frame_gray.copy()
-                if cv.waitKey(30) & 0xff == 27:
-                    break
                 continue
 
         p1, st, err = cv.calcOpticalFlowPyrLK(old_gray, frame_gray, p0, None, **lk_params)
@@ -73,26 +75,27 @@ def run_LK(cap, mask_option, centering, callback_progress=None, callback_image=N
                 for i, (new, old) in enumerate(zip(good_new, good_old)):
                     a, b = new.ravel()
                     c, d = old.ravel()
-                    drawingMask = cv.line(drawingMask, (int(a), int(b)), (int(c), int(d)),
-                                         color[i % len(color)].tolist(), 2)
-                    frame = cv.circle(frame, (int(a), int(b)), 5,
-                                      color[i % len(color)].tolist(), -1)
+                    
+                    # Dessin des repères visuels
+                    drawingMask = cv.line(drawingMask, (int(a), int(b)), (int(c), int(d)), color[i % len(color)].tolist(), 2)
+                    frame_c = cv.circle(frame_c, (int(a), int(b)), 5, color[i % len(color)].tolist(), -1)
+
+                    dx = a - c
+                    dy = b - d
+                    
+                    posX, posY = int(c), int(d)
+                    if 0 <= posY < image_height and 0 <= posX < image_width:
+                        current_flow[posY, posX, 0] = dx
+                        current_flow[posY, posX, 1] = dy
+                
                 p0 = good_new.reshape(-1, 1, 2)
             else:
                 p0 = None
 
-        if len(good_new) > 0 and len(good_old) > 0:
-            diff = good_new - good_old
-            magn = np.linalg.norm(diff, axis=1)
-            angle = float(np.mean(np.degrees(np.arctan2(diff[:, 1], diff[:, 0]))))
-            score = float(np.sum(magn)) / (image_width * image_height)
-            frames_data.append((score, angle))
-        else:
-            frames_data.append((0.0, 0.0))
+        frames_data.append(current_flow)
 
-        img = cv.add(frame, drawingMask)
+        img = cv.add(frame_c, drawingMask)
         old_gray = frame_gray.copy()
-        
         
         if callback_progress:
             callback_progress(len(frames_data), total_frames)
@@ -100,6 +103,5 @@ def run_LK(cap, mask_option, centering, callback_progress=None, callback_image=N
         if callback_image:
             callback_image(img)
 
-    cv.destroyAllWindows()
     print("Terminé.")
     return np.array(frames_data)

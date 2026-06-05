@@ -3,6 +3,7 @@ import os
 import sys
 import numpy as np
 import matplotlib
+from scipy.signal import find_peaks
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from scipy.ndimage import minimum_filter
@@ -133,10 +134,10 @@ class Analyzer():
         plt.savefig(dir , dpi=150)        
         plt.close()
     
-    
+
+
     def _detectBySliding(self, magnitudes: np.ndarray, fps: float) -> None:
-        
-        array            = np.array(magnitudes)
+        array = np.array(magnitudes)
         indices_non_nuls = np.nonzero(array)[0]
         
         if len(indices_non_nuls) < 10:
@@ -148,27 +149,48 @@ class Analyzer():
         magnitudes_utiles = array[idx_debut:idx_fin + 1]
         N                 = len(magnitudes_utiles)
 
-        min_gap = max(1, int(0.2 * fps))
-        max_gap = N // 2
+        min_gap = max(1, int(1.0 * fps))
+        max_gap = int(N * 0.75)
 
         if min_gap >= max_gap:
             print("[Analyse] Signal trop court pour la fréquence minimale demandée.")
             return
 
-        best_gap, best_error = 0, sys.float_info.max
-        for gap in range(min_gap, max_gap):
-            cost = self._costByGap(magnitudes_utiles, gap)
-            if cost < best_error:
-                best_error, best_gap = cost, gap
+        gaps = np.array(range(min_gap, max_gap))
+        costs = np.array([self._costByGap(magnitudes_utiles, gap) for gap in gaps])
+
+        # Normalisation linéaire de la courbe de coût entre 0 et 1
+        # Permet d'aligner la sensibilité de SciPy pour Farneback et Megaflow
+        min_c, max_c = np.min(costs), np.max(costs)
+        costs_norm = (costs - min_c) / (max_c - min_c) if max_c > min_c else costs
+
+        # Recherche des creux sur les coûts normalisés inversés
+        inv_costs = -costs_norm
+        indices_creux, properties = find_peaks(inv_costs, prominence=0.10)
+
+        gaps_valides = gaps[indices_creux]
+        costs_valides = costs[indices_creux]
+
+        if len(indices_creux) > 0:
+            # On extrait les prominences (la profondeur) de chaque creux trouvé par SciPy
+            prominences = properties["prominences"]
+            
+            # Le meilleur gap est tout simplement le creux le plus profond et le plus net
+            idx_meilleur_creux = np.argmax(prominences)
+            best_gap = gaps_valides[idx_meilleur_creux]
+        else:
+            # Repli sur le minimum global absolu
+            best_gap = gaps[np.argmin(costs)]
 
         if best_gap > 0:
             periode = best_gap / fps
             self._writeResults({
                 "periode_sec": round(periode, 2),
                 "frequence_hz": round(1 / periode, 2),
-                "nb_cycles_mouvement": round(len(magnitudes) / fps / periode, 2),
+                "nb_cycles_mouvement": round(N / best_gap, 2),
             })
-
+        
+            
     def _costByGap(self, signal: np.ndarray, gap: int) -> float:
         if gap <= 0 or gap >= len(signal):
             return sys.float_info.max
