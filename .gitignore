@@ -15,3 +15,5 @@ resources/
 *.log
 
 tmp
+
+docs/
