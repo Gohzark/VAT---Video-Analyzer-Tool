@@ -39,15 +39,15 @@ def executer_etape7():
     col_b1, col_b2, col_b3 = st.columns(3)
 
     with col_b1:
-        if st.button("🏁", key="btn_lk",use_container_width=True):
+        if st.button("🏁", key="btn_lk",width='stretch'):
             st.session_state.analysis = enums.Analyze.StartStop
 
     with col_b2:
-        if st.button("📡", key="btn_fb", use_container_width=True):
+        if st.button("📡", key="btn_fb", width='stretch'):
             st.session_state.analysis = enums.Analyze.FastFourierTransformation
 
     with col_b3:
-        if st.button("🛝", key="btn_mf", use_container_width=True):
+        if st.button("🛝", key="btn_mf", width='stretch'):
             st.session_state.analysis = enums.Analyze.Sliding
         
         

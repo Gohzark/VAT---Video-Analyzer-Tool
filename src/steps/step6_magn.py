@@ -43,14 +43,14 @@ def executer_etape6():
         st.warning(f"⚠️ Le fichier `{path_magnitudes}` existe déjà.")
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("🔥 Oui, recalculer et écraser", type="primary", use_container_width=True):
+            if st.button("🔥 Oui, recalculer et écraser", type="primary", width='stretch'):
                 lancer_le_calcul()
             
         with col2:
-            if st.button("❌ Non, conserver le résultat existant", use_container_width=True):
+            if st.button("❌ Non, conserver le résultat existant", width='stretch'):
                 st.success("Résultat existant conservé. Vous pouvez passer à l'étape suivante.")
                 st.session_state.step_over = True
         
     else:
-        if st.button("🚀 Lancer le calcul des magnitudes", use_container_width=True):
+        if st.button("🚀 Lancer le calcul des magnitudes", width='stretch'):
             lancer_le_calcul()

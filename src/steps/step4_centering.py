@@ -43,17 +43,17 @@ def executer_etape4():
     megaflow_chosen = (st.session_state.algorithm == enums.Algorithm.Megaflow) 
     
     with col_b1:
-        if st.button("🖼️", key="btn_lk",use_container_width=True):
+        if st.button("🖼️", key="btn_lk",width='stretch'):
             st.session_state.centering = enums.Centering.NoCentering
             st.session_state.step_over = True
 
     with col_b2:
-        if st.button("🦤",disabled=megaflow_chosen, key="btn_fb", use_container_width=True):
+        if st.button("🦤",disabled=megaflow_chosen, key="btn_fb", width='stretch'):
             st.session_state.centering = enums.Centering.ExponentialMovingAverage
             st.session_state.step_over = True
             
     with col_b3:
-        if st.button("🦅",disabled=megaflow_chosen, key="btn_kalman", use_container_width=True):
+        if st.button("🦅",disabled=megaflow_chosen, key="btn_kalman", width='stretch'):
             st.session_state.centering = enums.Centering.Kalman
             st.session_state.step_over = True
             

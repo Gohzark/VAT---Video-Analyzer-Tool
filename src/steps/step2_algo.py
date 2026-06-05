@@ -61,15 +61,15 @@ def executer_etape2():
     algo_selectionne = None
 
     with col_b1:
-        if st.button("🎯", key="btn_lk", use_container_width=True):
+        if st.button("🎯", key="btn_lk", width='stretch'):
             algo_selectionne = enums.Algorithm.LucasKanade
 
     with col_b2:
-        if st.button("🕸️", key="btn_fb", use_container_width=True):
+        if st.button("🕸️", key="btn_fb", width='stretch'):
             algo_selectionne = enums.Algorithm.Farneback
 
     with col_b3:
-        if st.button("⚡", key="btn_mf", use_container_width=True):
+        if st.button("⚡", key="btn_mf", width='stretch'):
             algo_selectionne = enums.Algorithm.Megaflow
 
     if algo_selectionne is not None:

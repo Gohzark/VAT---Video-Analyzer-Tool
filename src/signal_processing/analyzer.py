@@ -47,10 +47,10 @@ class Analyzer():
             return
 
         norms = np.array(magnitudes)
-    
-        clean_window = minimum_filter(norms, size=5, mode='nearest')
-        vecteur_bool = clean_window > 0
 
+        clean_window = minimum_filter(norms, size=3, mode='nearest')
+        vecteur_bool = clean_window > 0
+        print(f"[DEBUG] Somme True dans vecteur_bool : {vecteur_bool}")
         starts = np.where((vecteur_bool[:-1] == False) & (vecteur_bool[1:] == True))[0] + 1
         ends   = np.where((vecteur_bool[:-1] == True) & (vecteur_bool[1:] == False))[0] + 1
 
@@ -60,6 +60,13 @@ class Analyzer():
         # Cas particulier : finit en mouvement
         if vecteur_bool[-1]:
             ends = np.append(ends, len(vecteur_bool) - 1)
+
+        # ─── AJOUT : Synchronisation pour le comptage exact du nb_reps ───
+        if len(starts) > len(ends):
+            ends = np.append(ends, len(vecteur_bool) - 1)
+        elif len(ends) > len(starts):
+            starts = np.insert(starts, 0, 0)
+        # ─────────────────────────────────────────────────────────────────
 
         nb_reps = len(starts)
         if nb_reps < 1:
@@ -104,7 +111,8 @@ class Analyzer():
         freqs_pos  = freqs[:N // 2]
         amplitudes = np.abs(fft_result[:N // 2]) * 2 / N
 
-        self._plotFFT(freqs_pos, amplitudes)
+        fft_plot_path = os.path.join(self._plot_dir(), "plot_fft.png")
+        self._plotFFT(freqs_pos, amplitudes, fft_plot_path)
 
         mask          = freqs_pos >= 0.1
         idx_pic       = np.argmax(amplitudes[mask])
@@ -117,11 +125,12 @@ class Analyzer():
             "frequence_hz": frequence_dom,
             "ratio" : ratio,
             "nb_cycles_mouvement": round(len(magnitudes) / fps * frequence_dom, 2),
-            "plot_fft": os.path.join(self._plot_dir(), self.analyze.value, "plot_fft.png"),
-            "plot_evolution": os.path.join(self._plot_dir(), self.analyze.value, "plot_evolution.png"),
+            # Utilisation des chemins propres construits dynamiquement
+            "plot_fft": fft_plot_path,
+            "plot_evolution": os.path.join(self._plot_dir(), "plot_evolution.png"),
         })
         
-    def _plotFFT(self, freqs_pos: np.ndarray, amplitudes: np.ndarray) -> None:
+    def _plotFFT(self, freqs_pos: np.ndarray, amplitudes: np.ndarray, save_path: str) -> None:
         fig, ax = plt.subplots(figsize=(10, 4))
         ax.plot(freqs_pos, amplitudes, color='steelblue')
         ax.set_xlabel("Fréquence (Hz)")
@@ -129,9 +138,9 @@ class Analyzer():
         ax.set_title("Spectre FFT")
         ax.grid(True, alpha=0.3)
         plt.tight_layout()
-        dir = self._plot_dir()
-        os.makedirs(os.path.dirname(dir), exist_ok=True)
-        plt.savefig(dir , dpi=150)        
+        
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        plt.savefig(save_path, dpi=150)        
         plt.close()
     
 

@@ -33,12 +33,12 @@ def executer_etape3():
     megaflow_chosen = (st.session_state.algorithm == enums.Algorithm.Megaflow) 
     
     with col_b1:
-        if st.button("❌", key="btn_lk",use_container_width=True):
+        if st.button("❌", key="btn_lk",width='stretch'):
             st.session_state.mask = enums.Mask.NoMask
             st.session_state.step_over = True
 
     with col_b2:
-        if st.button("🥽",disabled=megaflow_chosen, key="btn_fb", use_container_width=True):
+        if st.button("🥽",disabled=megaflow_chosen, key="btn_fb", width='stretch'):
             st.session_state.mask = enums.Mask.MOG2
             st.session_state.step_over = True
             

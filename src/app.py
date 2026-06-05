@@ -79,7 +79,7 @@ elif st.session_state.step == 7:
 st.write("---")
 col_b1, col_b2 = st.columns(2)
 with col_b1:
-    if st.button("⬅️ Étape précédente", use_container_width=True):
+    if st.button("⬅️ Étape précédente", width='stretch'):
         if st.session_state.step == 5 and st.session_state.algorithm == enums.Algorithm.Megaflow:
             st.session_state.step = 2
         else:
@@ -88,7 +88,7 @@ with col_b1:
         
 with col_b2:
     if (st.session_state.step_over):
-        if st.button("➡️ Étape suivante", use_container_width=True):
+        if st.button("➡️ Étape suivante", width='stretch'):
             st.session_state.step_over = False
             if st.session_state.step == 2 and st.session_state.algorithm == enums.Algorithm.Megaflow:
                 st.session_state.step = 5
@@ -99,7 +99,7 @@ with col_b2:
 # --- BOUTON DE RETOUR GLOBAL ---
 if st.session_state.step > 1:
     st.write("---")
-    if st.button("⬅️ Changer de vidéo", use_container_width=True):
+    if st.button("⬅️ Changer de vidéo", width='stretch'):
         
         # NETTOYAGE DU DOSSIER TMP
         if os.path.exists("tmp"):

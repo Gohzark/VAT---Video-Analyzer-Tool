@@ -21,7 +21,7 @@ def mettre_a_jour_barre(current_frame, total_frames, barre_progression):
 
 def mettre_a_jour_image(frame_bgr, cadre_video):
     frame_rgb = cv.cvtColor(frame_bgr, cv.COLOR_BGR2RGB)
-    cadre_video.image(frame_rgb, channels="RGB", use_container_width=True)
+    cadre_video.image(frame_rgb, channels="RGB", width='stretch')
 
 
 def executer_etape5():
@@ -80,7 +80,8 @@ def executer_etape5():
             if res_fps is not None:
                 st.session_state.fps = res_fps
                 barre_progression.empty()
-                st.success(
+                # Enregistre le message pour le rechargement
+                st.session_state.megaflow_success_msg = (
                     "Paramètres envoyés à Kaggle. "
                     "Lancez le notebook puis revenez télécharger le résultat."
                 )
@@ -115,12 +116,12 @@ def executer_etape5():
         col1, col2 = st.columns(2)
 
         with col1:
-            if st.button("Conserver et continuer →", use_container_width=True, type="primary"):
+            if st.button("Conserver et continuer →", width='stretch', type="primary"):
                 st.session_state.step_over = True
                 st.rerun()
 
         with col2:
-            if st.button("Recalculer (sauvegarde .bak)", use_container_width=True):
+            if st.button("Recalculer (sauvegarde .bak)", width='stretch'):
                 st.session_state.forcing_recalcul = True
                 st.session_state.step_over = False
                 backup_path = path_optical_flow + ".bak"
@@ -142,18 +143,22 @@ def executer_etape5():
                 "puis revenez télécharger le résultat."
             )
 
-            if st.button("Envoyer les paramètres à Kaggle", type="primary", use_container_width=True):
-                lancer_le_calcul()
+            if "megaflow_success_msg" in st.session_state:
+                st.success(st.session_state.megaflow_success_msg)
+        
+            if st.button("Envoyer les paramètres à Kaggle", type="primary", width='stretch'):
+                with st.spinner("Communication avec Kaggle en cours..."):
+                    lancer_le_calcul()
 
             st.link_button(
                 "Ouvrir le notebook Kaggle Megaflow",
                 "https://www.kaggle.com/code/tinodolbeau/megaflow",
-                use_container_width=True,
+                width='stretch',
             )
 
             st.divider()
 
-            if st.button("Télécharger le flux depuis Kaggle", use_container_width=True):
+            if st.button("Télécharger le flux depuis Kaggle", width='stretch'):
                 try:
                     os.makedirs(dossier_sortie, exist_ok=True)
                     commande = f'kaggle kernels output tinodolbeau/megaflow -p "{dossier_sortie}"'
@@ -198,6 +203,6 @@ def executer_etape5():
             if st.button(
                 f"Lancer le calcul — {st.session_state.algorithm.name}",
                 type="primary",
-                use_container_width=True,
+                width='stretch',
             ):
                 lancer_le_calcul()
