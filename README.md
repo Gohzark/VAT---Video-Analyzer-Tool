@@ -13,13 +13,17 @@ git clone https://github.com/Gohzark/VAT---Video-Analyzer-Tool
 ### 2. Configuration de l'environnement
 
 ```bash
-# Create and activate environment
-conda create -n VAT python=3.11
-conda activate track4world
+# Créer et activer l'environment
+conda env create -f environment.yml
+conda activate VAT
 ```
 
-## Prérequis
+## Utilisation
 
+Pour lancer l'outil exécuter la commande suivante :
 
-## Usage 
+```bash
+streamlit run src/app.py
+``` 
+
 
