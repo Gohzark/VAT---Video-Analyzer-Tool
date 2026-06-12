@@ -17,3 +17,5 @@ resources/
 tmp
 
 docs/
+
+*.code-workspace
