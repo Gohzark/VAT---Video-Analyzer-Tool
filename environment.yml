@@ -1,0 +1,11 @@
+```yaml
+name: VAT
+channels:
+  - defaults
+dependencies:
+  - numpy
+  - streamlit
+  - matplotlib
+  - scipy
+  - opencv
+  - kaggle
