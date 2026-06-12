@@ -13,7 +13,6 @@ git clone https://github.com/Gohzark/VAT---Video-Analyzer-Tool
 ### 2. Configuration de l'environnement
 
 ```bash
-# Créer et activer l'environment
 conda env create -f environment.yml
 conda activate VAT
 ```
