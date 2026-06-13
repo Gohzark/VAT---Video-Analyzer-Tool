@@ -1,6 +1,6 @@
 # README -- Video Analyzer Tool
 
-Video Analyzer Tool est un outil permettant de mettre en oeuvre certaines technologies d'estimation du flux optique et méthodes d'analyse du signal afin de comptabilisé des répétitions dans une vidéo de sport ou les mouvements sont effectués régulièrement.
+Video Analyzer Tool est un outil permettant de mettre en oeuvre certaines technologies d'estimation du flux optique et méthodes d'analyse du signal afin de comptabiliser des répétitions dans une vidéo de sport où les mouvements sont effectués régulièrement.
 
 
 ## ⚙️ Configuration & Installation
